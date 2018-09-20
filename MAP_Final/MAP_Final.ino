@@ -5,7 +5,7 @@
 **/
 #include <Servo.h>
 Servo myservo;
-const int bicepPin = A5;
+const int bicepPin = A1;
 const int servoPin = 4;
 int pos = 0;
 int bicepValue = 0;
@@ -18,7 +18,7 @@ int pressedTime;
 int releasedTime;
 int pressLength = 0;
 bool gripOpen = false;
-int emg = A1;
+int emg = A5;
 int emgArray[25] = {0};
 int readIndex;
 int emgValue;
