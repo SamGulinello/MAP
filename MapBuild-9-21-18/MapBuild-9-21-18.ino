@@ -128,12 +128,24 @@ int MuscleMotor::rms(int emgValue) {
   if (readIndex >= 25) {
     readIndex = 0;
   }
+
+  int * first = &emgValue;
+  int * last = &emgValue+24;
+
+  int * minNum = minElement(first, last);
+  int * maxNum = maxElement(first, last);
+
+  
   rmsValue = (sqrt(total/25));
   Serial.print(emgValue);
   Serial.print("\t");
   Serial.print(threshold);
   Serial.print("\t");
-  Serial.println(rmsValue);
+  Serial.print(rmsValue);
+  Serial.print("\t");
+  Serial.print(*minNum);
+  Serial.print("\t");
+  Serial.println(*maxNum);
   delay(25);
 
   return rmsValue;
@@ -169,6 +181,32 @@ void MuscleMotor::openCloseActuator(/*bool gripOpen, int pressLength*/) {
     }
 
   }
+}
+
+int* minElement(int * first, int * last){
+  
+  int * minNum = first;
+  
+  while(++first != last){
+    if(*first < *minNum){
+      minNum = first;
+    }
+  }
+
+  return minNum;
+}
+
+int* maxElement(int * first, int * last){
+  
+  int * maxNum = first;
+  
+  while(++first != last){
+    if(*first > *maxNum){
+      maxNum = first;
+    }
+  }
+
+  return maxNum;
 }
 
 /** ###HARDWARE CONTROL### **/
