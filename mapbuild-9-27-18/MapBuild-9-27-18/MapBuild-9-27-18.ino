@@ -128,13 +128,13 @@ int MuscleMotor::rms(int emgValue) {
   if (readIndex >= 25) {
     readIndex = 0;
   }
-/*
-  int * first = &emgValue;
-  int * last = &emgValue+24;
 
-  int * minNum = minElement(first, last);
+  int * first = emgArray;
+  int * last = emgArray+24;
+
+ // int * minNum = minElement(first, last);
   int * maxNum = maxElement(first, last);
-*/
+
   
   rmsValue = (sqrt(total/25));
   Serial.print(emgValue);
@@ -142,10 +142,10 @@ int MuscleMotor::rms(int emgValue) {
   Serial.print(threshold);
   Serial.print("\t");
   Serial.print(rmsValue);
-  /*Serial.print("\t");
-  Serial.print(*minNum);
   Serial.print("\t");
-  Serial.println(*maxNum);*/
+  //Serial.print(*minNum);
+ // Serial.print("\t");
+  Serial.println(*maxNum);
   delay(25);
 
   return rmsValue;
