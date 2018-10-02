@@ -17,6 +17,8 @@ int rmsValue;
 long total;
 int getRMSSignal = 0;
 int threshold;
+int *maxNum;
+
 
 
 void setup() {
@@ -25,6 +27,8 @@ void setup() {
   myservo.write(servoState);
   pinMode(emg, INPUT);
   Serial.begin(9600);
+  *maxNum = 0;
+  //Serial.println(sizeof(int));
 }
 
 /**
@@ -129,11 +133,19 @@ int MuscleMotor::rms(int emgValue) {
     readIndex = 0;
   }
 
+ /* total += *maxNum;                       //currently *maxNum is not adding correctly in this line
+  Serial.print(*maxNum);
+  Serial.print("\t");
+
   int * first = emgArray;
   int * last = emgArray+24;
 
- // int * minNum = minElement(first, last);
   int * maxNum = maxElement(first, last);
+
+  Serial.print(*maxNum);
+  Serial.print("\t");
+
+  total -= *maxNum;*/                       //but it is subtracting correctly here
 
   
   rmsValue = (sqrt(total/25));
@@ -141,11 +153,11 @@ int MuscleMotor::rms(int emgValue) {
   Serial.print("\t");
   Serial.print(threshold);
   Serial.print("\t");
-  Serial.print(rmsValue);
-  Serial.print("\t");
+  Serial.println(rmsValue);
+  //Serial.print("\t");
   //Serial.print(*minNum);
- // Serial.print("\t");
-  Serial.println(*maxNum);
+  //Serial.print("\t");
+  //Serial.println(*maxNum);
   delay(25);
 
   return rmsValue;
@@ -183,7 +195,7 @@ void MuscleMotor::openCloseActuator(/*bool gripOpen, int pressLength*/) {
   }
 }
 
-int* minElement(int * first, int * last){
+/*int* minElement(int * first, int * last){
   
   int * minNum = first;
   
@@ -196,7 +208,7 @@ int* minElement(int * first, int * last){
   }
 
   return minNum;
-}
+}*/
 
 int* maxElement(int * first, int * last){
   
