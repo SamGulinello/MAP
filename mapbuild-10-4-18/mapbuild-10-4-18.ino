@@ -1,8 +1,9 @@
 /**
-* @author Keith Lim and Sam Gullinello
+* @author Keith Lim, Sam Gullinello, Keller Martin, Jared _____
 * The Main file for working the MAP
-* Consist of the latest working code
+* Consists of the latest working code as of 10/4/18
 **/
+
 #include <Servo.h>
 Servo myservo;
 int pos = 0;
@@ -128,8 +129,10 @@ bool MuscleMotor::checkGripPosition(int16_t bicepValue)
 
 /**
 * Calculates Root Mean Square (RMS) of last 25 readings when called, including the newest emgValue reading
+* Removes the maximum value, in order to guarentee a more uniform reading
 **/
 int MuscleMotor::rms(int emgValue) {
+  //Updates array with new value from the emg
   total = total - emgArray[readIndex];
   emgArray[readIndex] = sq(emgValue);
   total = total + emgArray[readIndex];
@@ -138,6 +141,8 @@ int MuscleMotor::rms(int emgValue) {
     readIndex = 0;
   }
 
+
+  //adds maximum value back in, updates it, and then removes it again
   total += maxValue;                     
 
   first = emgArray;
@@ -148,8 +153,11 @@ int MuscleMotor::rms(int emgValue) {
 
   total -= *maxNum;                       
 
-  
+
+  //calculates rms
   rmsValue = (sqrt(total/24));
+
+  //Print things to the monitor. Creates the plot
   Serial.print(emgValue);
   Serial.print("\t");
   Serial.print(threshold);
@@ -172,7 +180,7 @@ void MuscleMotor::openCloseActuator(/*bool gripOpen, int pressLength*/) {
   if (currentGrip) {
 
 
-    if (amountOfSeconds >= 2000) {
+    if (amountOfSeconds >= 2000) {                                                              //change these to 1900 and it might work
       //writing onto the servo to open it (extend it)
       for (pos = 0; pos < 180; pos = pos + 1){
         myservo.write(pos);
