@@ -10,6 +10,7 @@ int pos = 0;
 int servoState = 0;
 //int pressLength = 0;                //delete
 bool gripOpen = false;
+int thresholdPot = A4;
 int emg = A5;
 int emgArray[25] = {0};
 int readIndex;
@@ -17,7 +18,7 @@ int emgValue;
 int rmsValue;
 long total;
 int getRMSSignal = 0;
-int threshold;
+//int threshold;
 int *maxNum;
 int *first;
 int *last;
@@ -29,6 +30,7 @@ void setup() {
   // put your setup code here, to run once:
   myservo.attach(4);
   myservo.write(servoState);
+  pinMode(thresholdPot, INPUT);
   pinMode(emg, INPUT);
   Serial.begin(9600);
   *maxNum = 0;
@@ -61,6 +63,7 @@ public:
   void readSignal(int16_t);
   //int  getAmountOfSeconds();                        //delete
   bool checkGripPosition(int16_t);
+  void setMaxSignal(int16_t);
   int  rms(int);
   void openCloseActuator(/*bool, int*/);            //placing the openCloseActuator function in the class
   //void reset();                                   //to be added later. This should reset all data to default so that the program can start running fresh again.
@@ -76,6 +79,11 @@ MuscleMotor::MuscleMotor(int16_t maxsignal, int16_t minsignal)
   this->maxSignal = maxsignal;
   this->minSignal = minsignal;
   this->amountOfSeconds = 0;
+}
+
+void MuscleMotor::setMaxSignal(int16_t maxSignal)
+{
+  this->maxSignal = maxSignal;
 }
 
 /**
@@ -160,7 +168,8 @@ int MuscleMotor::rms(int emgValue) {
   //Print things to the monitor. Creates the plot
   Serial.print(emgValue);
   Serial.print("\t");
-  Serial.print(threshold);
+ // Serial.print(threshold);
+  Serial.print(this->maxSignal);
   Serial.print("\t");
   Serial.println(rmsValue);
   delay(25);
@@ -283,9 +292,14 @@ void loop() {
   // Rule of thumb for optimization:
   // The code within this box should not be more than 8 lines
 
-  getRMSSignal = mm->rms(analogRead(emg) - 334);
-  threshold = 25;
+  //getRMSSignal = mm->rms(analogRead(emg) - 334);
+  getRMSSignal = mm->rms(analogRead(emg) - 575);
+
+  // Setting variable threshold
+ // threshold = analogRead(thresholdPot)/10;
+  // threshold = 25;
   // this will be used to change gripPosition
+  mm->setMaxSignal(analogRead(thresholdPot)/10);
   gripOpen = mm->checkGripPosition(getRMSSignal);
   //pressLength = mm->getAmountOfSeconds();                               //delete
   mm->openCloseActuator(/*gripOpen, pressLength*/);
