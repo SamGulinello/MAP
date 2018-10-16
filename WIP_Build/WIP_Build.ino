@@ -21,6 +21,7 @@ int *maxNum;
 int *first;
 int *last;
 int maxValue = 0;
+int fsr = A0;
 
 
 
@@ -30,6 +31,7 @@ void setup() {
   myservo.write(servoState);
   pinMode(thresholdPot, INPUT);
   pinMode(emg, INPUT);
+  pinMode(fsr, INPUT);
   Serial.begin(9600);
   *maxNum = 0;
   *first = 0;
@@ -53,6 +55,7 @@ private:
   int16_t maxSignal;
   int16_t minSignal;
   int amountOfSeconds;
+  int16_t fsrReading;
 
 
 public:
@@ -61,7 +64,8 @@ public:
   bool checkGripPosition(int16_t);
   void setMaxSignal(int16_t);
   int  rms(int);
-  void openCloseActuator();            
+  void openCloseActuator();  
+  void setFsrReading(int16_t);          
 };
 
 /**
@@ -79,6 +83,10 @@ MuscleMotor::MuscleMotor(int16_t maxsignal, int16_t minsignal)
 void MuscleMotor::setMaxSignal(int16_t maxSignal)
 {
   this->maxSignal = maxSignal;
+}
+
+void MuscleMotor::setFsrReading(int16_t fsrReading){
+  this->fsrReading = fsrReading;
 }
 
 
@@ -159,6 +167,8 @@ int MuscleMotor::rms(int emgValue) {
  // Serial.print(threshold);
   Serial.print(this->maxSignal);
   Serial.print("\t");
+  Serial.print(this->fsrReading);
+  Serial.print("\t");
   Serial.println(rmsValue);
   delay(25);
 
@@ -177,7 +187,7 @@ void MuscleMotor::openCloseActuator() {
   if (currentGrip) {
 
 
-    if (amountOfSeconds >= 2000) {                                                              //change these to 1900 and it might work
+    if (amountOfSeconds >= 2000) {                                                         
       //writing onto the servo to open it (extend it)
       for (pos = 0; pos < 180; pos = pos + 1){
         myservo.write(pos);
@@ -218,6 +228,9 @@ void loop() {
   // put your main code here, to run repeatedly:
   // Rule of thumb for optimization:
   // The code within this box should not be more than 8 lines
+
+  //set fsrReading variable
+  mm->setFsrReading(analogRead(fsr));
 
   //getRMSSignal = mm->rms(analogRead(emg) - 334);
   getRMSSignal = mm->rms(analogRead(emg) - 575);
