@@ -1,5 +1,5 @@
 /**
-* @author Keith Lim, Sam Gullinello, Keller Martin, Jared _____
+* @author Keith Lim, Sam Gulinello, Keller Martin, Jared Butler
 * The Main file for working the MAP
 * Consists of the latest working code as of 10/4/18
 **/
