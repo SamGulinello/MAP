@@ -6,6 +6,7 @@
 
 #include <Servo.h>
 Servo myservo;
+Servo myservo2;
 int pos = 0;
 int servoState = 0;
 bool gripOpen = false;
@@ -27,8 +28,10 @@ int fsr = A0;
 
 void setup() {
   // put your setup code here, to run once:
-  myservo.attach(4);
+  myservo.attach(10);
+  myservo2.attach(11);
   myservo.write(servoState);
+  myservo2.write(servoState);
   pinMode(thresholdPot, INPUT);
   pinMode(emg, INPUT);
   pinMode(fsr, INPUT);
@@ -190,6 +193,7 @@ void MuscleMotor::openCloseActuator() {
     if (amountOfSeconds >= 2000) {                                                         
       //writing onto the servo to open it (extend it)
       for (pos = 0; pos < 180; pos = pos + 1){
+        myservo2.write(pos);
         myservo.write(pos);
         delay(5);
       }
@@ -199,6 +203,7 @@ void MuscleMotor::openCloseActuator() {
     if (amountOfSeconds >= 2000) {
       //writing onto the servo to close it (retract it)
       for (pos = 180; pos > 1; pos = pos - 1) {
+        myservo2.write(pos);
         myservo.write(pos);
         delay(5);
       }
@@ -232,8 +237,8 @@ void loop() {
   //set fsrReading variable
   mm->setFsrReading(analogRead(fsr));
 
-  //getRMSSignal = mm->rms(analogRead(emg) - 334);
-  getRMSSignal = mm->rms(analogRead(emg) - 575);
+  getRMSSignal = mm->rms(analogRead(emg) - 334);
+  //getRMSSignal = mm->rms(analogRead(emg) - 575);
 
   // Setting variable threshold
   mm->setMaxSignal(analogRead(thresholdPot)/10);
