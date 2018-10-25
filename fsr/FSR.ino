@@ -1,16 +1,14 @@
 #include <Servo.h>
-int FSRpin = A5;
+int emgpin = A5;
 
 void setup() {
   // put your setup code here, to run once:
-  pinMode(FSRpin, INPUT);
+  pinMode(emgpin, INPUT);
   Serial.begin(9600);
 }
 
 void loop() {
-  Serial.print(600);
-  Serial.print("\t");
-  Serial.println(analogRead(FSRpin));
+  Serial.println(analogRead(emgpin));
   delay(25);
 
 }
