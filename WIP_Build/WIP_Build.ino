@@ -23,6 +23,7 @@ int *first;
 int *last;
 int maxValue = 0;
 int fsr = A0;
+int led = 4;
 
 
 
@@ -35,6 +36,7 @@ void setup() {
   pinMode(thresholdPot, INPUT);
   pinMode(emg, INPUT);
   pinMode(fsr, INPUT);
+  pinMode(led, OUTPUT);
   Serial.begin(9600);
   *maxNum = 0;
   *first = 0;
@@ -192,20 +194,29 @@ void MuscleMotor::openCloseActuator() {
 
     if (amountOfSeconds >= 2000) {                                                         
       //writing onto the servo to open it (extend it)
+      digitalWrite(led, HIGH);
       for (pos = 0; pos < 180; pos = pos + 1){
         myservo2.write(pos);
         myservo.write(pos);
         delay(5);
+        if(pos == 179){
+          digitalWrite(led, LOW);
+        }
+        if(fsrReading > 500){
+          break;
+        }
       }
 
     }
   } else {
     if (amountOfSeconds >= 2000) {
       //writing onto the servo to close it (retract it)
+      
       for (pos = 180; pos > 1; pos = pos - 1) {
         myservo2.write(pos);
         myservo.write(pos);
         delay(5);
+        
       }
     }
 
