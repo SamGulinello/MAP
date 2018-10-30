@@ -24,6 +24,11 @@ int *last;
 int maxValue = 0;
 int fsr = A0;
 int led = 4;
+int BatteryLevelReadBoth = A2;
+int BatteryLevelReadBat2 = A3;
+int BatteryLevelLEDR = D2;
+int BatteryLevelLEDG = D3;
+int BatteryLavelLEDB = D4;
 
 
 
@@ -36,7 +41,13 @@ void setup() {
   pinMode(thresholdPot, INPUT);
   pinMode(emg, INPUT);
   pinMode(fsr, INPUT);
+  pinMode(BatteryLevelReadBoth, INPUT);
+  pinMode(BatteryLevelReadBat2, INPUT);
   pinMode(led, OUTPUT);
+  pinMode(BatteryLevelLEDR, OUTPUT);
+  pinMode(BatteryLevelLEDG, OUTPUT);
+  pinMode(BatteryLevelLEDB, OUTPUT);
+
   Serial.begin(9600);
   *maxNum = 0;
   *first = 0;
