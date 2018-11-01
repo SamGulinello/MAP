@@ -23,7 +23,7 @@ int *first;
 int *last;
 int maxValue = 0;
 int fsr = A0;
-int led = 4;
+int led = 7;
 int BatteryLevelReadBoth = A2;
 int BatteryLevelReadBat2 = A3;
 int BatteryLevelLEDR = 2;
@@ -209,7 +209,7 @@ void MuscleMotor::openCloseActuator() {
 
 
     if (amountOfSeconds >= 2000) {                                                         
-      //writing onto the servo to open it (extend it)
+      //writing onto the servo to close it (extend it)
       digitalWrite(led, HIGH);
       for (pos = 0; pos < 180; pos = pos + 1){
         myservo2.write(pos);
@@ -217,13 +217,13 @@ void MuscleMotor::openCloseActuator() {
         delay(5);
 
         //break if FSR reading is high
-        /*
+        
         if(pos == 179){
           digitalWrite(led, LOW);
         }
         if(fsrReading > 500){
           break;
-        }*/
+        }
 
         
       }
@@ -231,7 +231,7 @@ void MuscleMotor::openCloseActuator() {
     }
   } else {
     if (amountOfSeconds >= 2000) {
-      //writing onto the servo to close it (retract it)
+      //writing onto the servo to open it (retract it)
       
       for (pos = 180; pos > 1; pos = pos - 1) {
         myservo2.write(pos);
