@@ -26,9 +26,9 @@ int fsr = A0;
 int led = 4;
 int BatteryLevelReadBoth = A2;
 int BatteryLevelReadBat2 = A3;
-int BatteryLevelLEDR = D2;
-int BatteryLevelLEDG = D3;
-int BatteryLavelLEDB = D4;
+int BatteryLevelLEDR = 2;
+int BatteryLevelLEDG = 3;
+int BatteryLevelLEDB = 4;
 
 
 
@@ -81,7 +81,8 @@ public:
   void setMaxSignal(int16_t);
   int  rms(int);
   void openCloseActuator();  
-  void setFsrReading(int16_t);          
+  void setFsrReading(int16_t);  
+  int getFsrReading();        
 };
 
 /**
@@ -103,6 +104,10 @@ void MuscleMotor::setMaxSignal(int16_t maxSignal)
 
 void MuscleMotor::setFsrReading(int16_t fsrReading){
   this->fsrReading = fsrReading;
+}
+
+int MuscleMotor::getFsrReading(){
+  return fsrReading;
 }
 
 
@@ -210,12 +215,17 @@ void MuscleMotor::openCloseActuator() {
         myservo2.write(pos);
         myservo.write(pos);
         delay(5);
+
+        //break if FSR reading is high
+        /*
         if(pos == 179){
           digitalWrite(led, LOW);
         }
         if(fsrReading > 500){
           break;
-        }
+        }*/
+
+        
       }
 
     }
@@ -257,7 +267,15 @@ void loop() {
   // The code within this box should not be more than 8 lines
 
   //set fsrReading variable
+  
   mm->setFsrReading(analogRead(fsr));
+
+  //temporary LED stuff
+  if(mm->getFsrReading() > 600){
+    digitalWrite(led, HIGH);
+  } else {
+    digitalWrite(led, LOW);
+  }
 
   getRMSSignal = mm->rms(analogRead(emg) - 334);
   //getRMSSignal = mm->rms(analogRead(emg) - 575);
