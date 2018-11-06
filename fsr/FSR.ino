@@ -1,5 +1,6 @@
 #include <Servo.h>
-int emgpin = A5;
+int emgpin = A1;
+int emgValue;
 
 void setup() {
   // put your setup code here, to run once:
@@ -8,7 +9,8 @@ void setup() {
 }
 
 void loop() {
-  Serial.println(analogRead(emgpin));
+  emgValue = analogRead(emgpin);
+  Serial.println(emgValue);
   delay(25);
 
 }
