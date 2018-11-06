@@ -81,8 +81,8 @@ public:
   void setMaxSignal(int16_t);
   int  rms(int);
   void openCloseActuator();  
-  void setFsrReading(int16_t);  
-  int getFsrReading();        
+  void setFsrReading(int16_t);
+  void indicateBatteryLevel();          
 };
 
 /**
@@ -104,10 +104,6 @@ void MuscleMotor::setMaxSignal(int16_t maxSignal)
 
 void MuscleMotor::setFsrReading(int16_t fsrReading){
   this->fsrReading = fsrReading;
-}
-
-int MuscleMotor::getFsrReading(){
-  return fsrReading;
 }
 
 
@@ -209,29 +205,24 @@ void MuscleMotor::openCloseActuator() {
 
 
     if (amountOfSeconds >= 2000) {                                                         
-      //writing onto the servo to close it (extend it)
+      //writing onto the servo to open it (extend it)
       digitalWrite(led, HIGH);
       for (pos = 0; pos < 180; pos = pos + 1){
         myservo2.write(pos);
         myservo.write(pos);
         delay(5);
-
-        //break if FSR reading is high
-        
         if(pos == 179){
           digitalWrite(led, LOW);
         }
         if(fsrReading > 500){
           break;
         }
-
-        
       }
 
     }
   } else {
     if (amountOfSeconds >= 2000) {
-      //writing onto the servo to open it (retract it)
+      //writing onto the servo to close it (retract it)
       
       for (pos = 180; pos > 1; pos = pos - 1) {
         myservo2.write(pos);
@@ -243,6 +234,22 @@ void MuscleMotor::openCloseActuator() {
 
   }
 }
+/**
+*  Light RGB LED to different colors to signal the battery level.
+**/
+
+void MuscleMotor::indicateBatteryLevel() {
+  
+  int bat2Level = digitalRead(BatteryLevelReadBat2);
+  int bat1Level = digitalRead(BatteryLevelReadBoth) - bat2Level;
+  // Logic for how to light up LED
+  
+//  if()git
+//  digitalWrite(BatteryLevelLEDR, HIGH);
+//  digitalWrite(BatteryLevelLEDG, HIGH);
+//  digitalWrite(BatteryLevelLEDB, HIGH);
+}
+
 
 int* maxElement(int * first, int * last){
   
@@ -267,15 +274,7 @@ void loop() {
   // The code within this box should not be more than 8 lines
 
   //set fsrReading variable
-  
   mm->setFsrReading(analogRead(fsr));
-
-  //temporary LED stuff
-  if(mm->getFsrReading() > 600){
-    digitalWrite(led, HIGH);
-  } else {
-    digitalWrite(led, LOW);
-  }
 
   getRMSSignal = mm->rms(analogRead(emg) - 334);
   //getRMSSignal = mm->rms(analogRead(emg) - 575);
