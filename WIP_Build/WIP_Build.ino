@@ -240,14 +240,28 @@ void MuscleMotor::openCloseActuator() {
 
 void MuscleMotor::indicateBatteryLevel() {
   
-  int bat2Level = digitalRead(BatteryLevelReadBat2);
-  int bat1Level = digitalRead(BatteryLevelReadBoth) - bat2Level;
-  // Logic for how to light up LED
-  
-//  if()git
-//  digitalWrite(BatteryLevelLEDR, HIGH);
-//  digitalWrite(BatteryLevelLEDG, HIGH);
-//  digitalWrite(BatteryLevelLEDB, HIGH);
+  int bat2Level = analogRead(BatteryLevelReadBat2);
+  int bat1Level = analogRead(BatteryLevelReadBoth) - bat2Level;
+  int greenThreshold = 818; // 4V*1023/5V
+  int redThreshold = 655; // 3.2V*1023/5V
+
+    digitalWrite(BatteryLevelLEDB, LOW);
+
+    if((bat2Level > greenThreshold) && (bat1Level > greenThreshold)) {
+    digitalWrite(BatteryLevelLEDR, LOW);
+    digitalWrite(BatteryLevelLEDG, HIGH);
+    }
+    
+    else if((bat2Level > redThreshold) && (bat1Level > redThreshold)) {
+      digitalWrite(BatteryLevelLEDR, HIGH);
+      digitalWrite(BatteryLevelLEDG, HIGH);
+    }
+    
+    else if((bat2Level <= redThreshold) || (bat1Level <= redThreshold)){
+      digitalWrite(BatteryLevelLEDR, HIGH);
+      digitalWrite(BatteryLevelLEDG, LOW);
+    }
+    
 }
 
 
@@ -272,6 +286,9 @@ void loop() {
   // put your main code here, to run repeatedly:
   // Rule of thumb for optimization:
   // The code within this box should not be more than 8 lines
+
+  mm->indicateBatteryLevel();
+
 
   //set fsrReading variable
   mm->setFsrReading(analogRead(fsr));
