@@ -10,8 +10,6 @@ Servo myservo2;
 int pos = 0;
 int servoState = 0;
 bool gripOpen = false;
-int thresholdPot = A4;
-int emg = A5;
 int emgArray[25] = {0};
 int readIndex;
 int emgValue;
@@ -22,20 +20,27 @@ int *maxNum;
 int *first;
 int *last;
 int maxValue = 0;
+
+// Analog Pins
 int fsr = A0;
-int led = 7;
 int BatteryLevelReadBoth = A2;
 int BatteryLevelReadBat2 = A3;
+int thresholdPot = A4;
+int emg = A5;
+//Digital Pins
 int BatteryLevelLEDR = 2;
 int BatteryLevelLEDG = 3;
 int BatteryLevelLEDB = 4;
+int led = 7;
+int servo = 10;
+int servo2 = 11;
 
 
 
 void setup() {
   // put your setup code here, to run once:
-  myservo.attach(10);
-  myservo2.attach(11);
+  myservo.attach(servo);
+  myservo2.attach(servo2);
   myservo.write(servoState);
   myservo2.write(servoState);
   pinMode(thresholdPot, INPUT);
@@ -84,6 +89,10 @@ public:
   void setFsrReading(int16_t);
   void indicateBatteryLevel();          
 };
+
+
+//Instantiate the class. Default threshold set to 25. 
+MuscleMotor* mm = new MuscleMotor(25, 0);
 
 /**
 * Set the fields to a default value.
@@ -205,16 +214,16 @@ void MuscleMotor::openCloseActuator() {
 
 
     if (amountOfSeconds >= 2000) {                                                         
-      //writing onto the servo to open it (extend it)
+      //writing onto the servo to close it
       digitalWrite(led, HIGH);
-      for (pos = 0; pos < 180; pos = pos + 1){
+      for (/*pos = 0*/; pos < 180; pos = pos + 1){
         myservo2.write(pos);
         myservo.write(pos);
-        delay(5);
-        if(pos == 179){
+        mm->setFsrReading(analogRead(fsr));
+        delay(75);
+        
+        if(fsrReading > 600){
           digitalWrite(led, LOW);
-        }
-        if(fsrReading > 500){
           break;
         }
       }
@@ -222,12 +231,12 @@ void MuscleMotor::openCloseActuator() {
     }
   } else {
     if (amountOfSeconds >= 2000) {
-      //writing onto the servo to close it (retract it)
-      
-      for (pos = 180; pos > 1; pos = pos - 1) {
+      //writing onto the servo to open it
+      digitalWrite(led, LOW);
+      for (/*pos = 180*/; pos > 1; pos = pos - 1) {
         myservo2.write(pos);
         myservo.write(pos);
-        delay(5);
+        delay(75);
         
       }
     }
@@ -279,8 +288,6 @@ int* maxElement(int * first, int * last){
 }
 
 
-//Instantiate the class. Default threshold set to 25. 
-MuscleMotor* mm = new MuscleMotor(25, 0);
 
 void loop() {
   // put your main code here, to run repeatedly:
