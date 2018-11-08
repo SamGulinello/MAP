@@ -1,5 +1,5 @@
 #include <Servo.h>
-int emgpin = A1;
+int emgpin = A5;
 int emgValue;
 
 void setup() {

@@ -2,12 +2,15 @@
 Servo myservo;
 Servo myservo2;
 int pos = 0;
-int servoState = 0;
+int servoState = 0; //this means the hand is open
 int input = A0;
+int fsr = A5;
+int led = 13;
 int inputVal = 0;
 bool oldValGreaterThan600 = false;
 bool currentValGreaterThan600 = false;
 bool handState = false;
+int fsrVal = 0;
 
 void setup() {
   // put your setup code here, to run once:
@@ -16,6 +19,9 @@ void setup() {
   myservo.write(servoState);
   myservo2.write(servoState);
   pinMode(input, INPUT);
+  pinMode(led, OUTPUT);
+  pinMode(fsr, INPUT);
+  digitalWrite(led, LOW);
   Serial.begin(9600);
 }
 
@@ -23,19 +29,31 @@ void setup() {
 void moveMotors(bool handState){
   if(handState){
     
-    for (pos = 180; pos > 1; pos = pos - 1) {
+    //opens hand
+    digitalWrite(led, LOW);
+    
+    for (/*pos = 180*/; pos > 1; pos = pos - 1) {
         myservo2.write(pos);
         myservo.write(pos);
-        delay(5); 
+        delay(75); 
+
+        
       }
       
   } else {
     
-    for (pos = 0; pos < 180; pos = pos + 1){
+    //closes hand
+    
+    for (/*pos = 0*/; pos < 180; pos = pos + 1){
         myservo2.write(pos);
         myservo.write(pos);
-        delay(5);
+        fsrVal = analogRead(fsr);
+        delay(75);
 
+        if(fsrVal > 600){
+          digitalWrite(led, HIGH);
+          break;
+        }
         
         /*if(pos == 179){
           digitalWrite(led, LOW);
@@ -52,7 +70,16 @@ void moveMotors(bool handState){
 void loop() {
   // put your main code here, to run repeatedly:
   inputVal = analogRead(input);
-  Serial.println(inputVal);
+  Serial.print(inputVal);
+  Serial.print("\t");
+  Serial.print(600);
+  Serial.print("\t");
+  Serial.print(fsrVal);
+  Serial.print("\t");
+  Serial.println(pos);
+  
+
+  fsrVal = analogRead(fsr);
 
   if(inputVal > 600){
     currentValGreaterThan600 = true;
