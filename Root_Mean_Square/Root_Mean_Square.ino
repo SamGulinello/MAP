@@ -11,12 +11,12 @@ void setup() {
   for(int thisReading = 0; thisReading < 25; thisReading++){
     emgArray[thisReading]=0;
   }
-  Serial.begin(115200);
+  Serial.begin(9600);
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
-  emgValue = analogRead(emg)-334;
+  emgValue = analogRead(emg) - 575;
   total = total - emgArray[readIndex];
   emgArray[readIndex] = sq(emgValue);
   total = total + emgArray[readIndex];
