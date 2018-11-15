@@ -1,7 +1,7 @@
 /**
 * @author Keith Lim, Sam Gullinello, Keller Martin, Jared Butler
 * The Main file for working the MAP
-* Consists of the latest working code as of 10/4/18
+* Consists of the latest working code as of 11/15/18
 **/
 
 #include <Servo.h>
@@ -22,15 +22,16 @@ int *last;
 int maxValue = 0;
 
 // Analog Pins
-int fsr = A0;
-int BatteryLevelReadBoth = A2;
-int BatteryLevelReadBat2 = A3;
+int fsr = A5;
+int BatteryLevelReadBoth = A3;
+int BatteryLevelReadBat2 = A2;
 int thresholdPot = A4;
-int emg = A5;
+int emg = A1;
+
 //Digital Pins
 int BatteryLevelLEDR = 2;
-int BatteryLevelLEDG = 3;
-int BatteryLevelLEDB = 4;
+int BatteryLevelLEDG = 4;
+int BatteryLevelLEDB = 3;
 int led = 7;
 int servo = 10;
 int servo2 = 11;
@@ -74,13 +75,13 @@ private:
   bool openGrip;
   bool currentGrip;
   int16_t maxSignal;
-  int16_t minSignal;
+  //int16_t minSignal;
   int amountOfSeconds;
   int16_t fsrReading;
 
 
 public:
-  MuscleMotor(int16_t, int16_t);                  
+  MuscleMotor(/*int16_t, int16_t*/);                  
   void readSignal(int16_t);
   bool checkGripPosition(int16_t);
   void setMaxSignal(int16_t);
@@ -92,17 +93,17 @@ public:
 
 
 //Instantiate the class. Default threshold set to 25. 
-MuscleMotor* mm = new MuscleMotor(25, 0);
+MuscleMotor* mm = new MuscleMotor(/*25, 0*/);
 
 /**
 * Set the fields to a default value.
 **/
-MuscleMotor::MuscleMotor(int16_t maxsignal, int16_t minsignal)
+MuscleMotor::MuscleMotor(/*int16_t maxsignal, int16_t minsignal*/)
 {
   this->openGrip = true;
   this->currentGrip = true;
-  this->maxSignal = maxsignal;
-  this->minSignal = minsignal;
+  //this->maxSignal = maxsignal;
+  //this->minSignal = minsignal;
   this->amountOfSeconds = 0;
 }
 
@@ -114,6 +115,7 @@ void MuscleMotor::setMaxSignal(int16_t maxSignal)
 void MuscleMotor::setFsrReading(int16_t fsrReading){
   this->fsrReading = fsrReading;
 }
+
 
 
 // check to see if the grip should be open or close
@@ -190,12 +192,12 @@ int MuscleMotor::rms(int emgValue) {
   //Print things to the monitor. Creates the plot
   Serial.print(emgValue);
   Serial.print("\t");
- // Serial.print(threshold);
   Serial.print(this->maxSignal);
   Serial.print("\t");
   Serial.print(this->fsrReading);
   Serial.print("\t");
   Serial.println(rmsValue);
+  //Serial.print("\t");
   delay(25);
 
   return rmsValue;
@@ -220,7 +222,7 @@ void MuscleMotor::openCloseActuator() {
         myservo2.write(pos);
         myservo.write(pos);
         mm->setFsrReading(analogRead(fsr));
-        delay(75);
+        delay(5);
         
         if(fsrReading > 600){
           digitalWrite(led, LOW);
@@ -236,7 +238,7 @@ void MuscleMotor::openCloseActuator() {
       for (/*pos = 180*/; pos > 1; pos = pos - 1) {
         myservo2.write(pos);
         myservo.write(pos);
-        delay(75);
+        delay(5);
         
       }
     }
@@ -250,25 +252,31 @@ void MuscleMotor::openCloseActuator() {
 void MuscleMotor::indicateBatteryLevel() {
   
   int bat2Level = analogRead(BatteryLevelReadBat2);
-  int bat1Level = analogRead(BatteryLevelReadBoth) - bat2Level;
+  int bat1Level = analogRead(BatteryLevelReadBoth);
   int greenThreshold = 818; // 4V*1023/5V
   int redThreshold = 655; // 3.2V*1023/5V
+  //Serial.print(bat2Level);
+  //Serial.print("\t");
+  //Serial.println(bat1Level);
 
     digitalWrite(BatteryLevelLEDB, LOW);
 
-    if((bat2Level > greenThreshold) && (bat1Level > greenThreshold)) {
+    if((bat2Level > greenThreshold)/* && (bat1Level > greenThreshold)*/) {
     digitalWrite(BatteryLevelLEDR, LOW);
+    digitalWrite(BatteryLevelLEDB, LOW);
     digitalWrite(BatteryLevelLEDG, HIGH);
     }
     
-    else if((bat2Level > redThreshold) && (bat1Level > redThreshold)) {
-      digitalWrite(BatteryLevelLEDR, HIGH);
-      digitalWrite(BatteryLevelLEDG, HIGH);
+    else if((bat2Level > redThreshold)/* && (bat1Level > redThreshold)*/) {
+      digitalWrite(BatteryLevelLEDR, LOW);
+      digitalWrite(BatteryLevelLEDG, LOW);
+      digitalWrite(BatteryLevelLEDB, HIGH);
     }
     
-    else if((bat2Level <= redThreshold) || (bat1Level <= redThreshold)){
+    else if((bat2Level <= redThreshold)/* || (bat1Level <= redThreshold)*/){
       digitalWrite(BatteryLevelLEDR, HIGH);
       digitalWrite(BatteryLevelLEDG, LOW);
+      digitalWrite(BatteryLevelLEDB, LOW);
     }
     
 }
@@ -296,15 +304,14 @@ void loop() {
 
   mm->indicateBatteryLevel();
 
-
   //set fsrReading variable
   mm->setFsrReading(analogRead(fsr));
 
-  getRMSSignal = mm->rms(analogRead(emg) - 334);
-  //getRMSSignal = mm->rms(analogRead(emg) - 575);
+  //getRMSSignal = mm->rms(analogRead(emg) - 334);
+  getRMSSignal = mm->rms(analogRead(emg) - 500);
 
   // Setting variable threshold
-  mm->setMaxSignal(analogRead(thresholdPot)/10);
+  mm->setMaxSignal(analogRead(thresholdPot));
   
   gripOpen = mm->checkGripPosition(getRMSSignal);
   mm->openCloseActuator();
