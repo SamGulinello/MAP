@@ -225,12 +225,12 @@ void MuscleMotor::openCloseActuator() {
         delay(5);
         
         if(fsrReading > 600){
-          digitalWrite(led, LOW);
+          //digitalWrite(led, LOW);
           break;
         }
       }
-
     }
+    
   } else {
     if (amountOfSeconds >= 2000) {
       //writing onto the servo to open it
@@ -242,8 +242,10 @@ void MuscleMotor::openCloseActuator() {
         
       }
     }
-
+    
   }
+
+  
 }
 /**
 *  Light RGB LED to different colors to signal the battery level.
