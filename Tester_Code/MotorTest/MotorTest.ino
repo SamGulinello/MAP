@@ -1,3 +1,8 @@
+/* Simple code to open and close hand with a potentiometer.
+ * Toggles open and closed when potentiometer reading passes
+ * over the threshold of 600
+ */
+
 #include <Servo.h>
 Servo myservo;
 Servo myservo2;
