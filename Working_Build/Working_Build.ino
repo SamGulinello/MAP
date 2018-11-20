@@ -1,42 +1,63 @@
 /**
-* @author Keith Lim, Sam Gullinello, Keller Martin, Jared _____
+* @author Keith Lim, Sam Gullinello, Keller Martin, Jared Butler
 * The Main file for working the MAP
-* Consists of the latest working code as of 10/4/18
+* Consists of the latest working code as of 11/15/18
 **/
 
 #include <Servo.h>
 Servo myservo;
+Servo myservo2;
 int pos = 0;
 int servoState = 0;
-//int pressLength = 0;                //delete
 bool gripOpen = false;
-int thresholdPot = A4;
-int emg = A5;
 int emgArray[25] = {0};
 int readIndex;
 int emgValue;
 int rmsValue;
 long total;
 int getRMSSignal = 0;
-//int threshold;
 int *maxNum;
 int *first;
 int *last;
 int maxValue = 0;
 
+// Analog Pins
+int fsr = A5;
+int BatteryLevelReadBoth = A3;
+int BatteryLevelReadBat2 = A2;
+int thresholdPot = A4;
+int emg = A1;
+
+//Digital Pins
+int BatteryLevelLEDR = 2;
+int BatteryLevelLEDG = 4;
+int BatteryLevelLEDB = 3;
+int led = 7;
+int servo = 10;
+int servo2 = 11;
+
 
 
 void setup() {
   // put your setup code here, to run once:
-  myservo.attach(4);
+  myservo.attach(servo);
+  myservo2.attach(servo2);
   myservo.write(servoState);
+  myservo2.write(servoState);
   pinMode(thresholdPot, INPUT);
   pinMode(emg, INPUT);
+  pinMode(fsr, INPUT);
+  pinMode(BatteryLevelReadBoth, INPUT);
+  pinMode(BatteryLevelReadBat2, INPUT);
+  pinMode(led, OUTPUT);
+  pinMode(BatteryLevelLEDR, OUTPUT);
+  pinMode(BatteryLevelLEDG, OUTPUT);
+  pinMode(BatteryLevelLEDB, OUTPUT);
+
   Serial.begin(9600);
   *maxNum = 0;
   *first = 0;
   *last = 0;
-  //Serial.println(sizeof(int));
 }
 
 /**
@@ -54,30 +75,35 @@ private:
   bool openGrip;
   bool currentGrip;
   int16_t maxSignal;
-  int16_t minSignal;
+  //int16_t minSignal;
   int amountOfSeconds;
+  int16_t fsrReading;
 
 
 public:
-  MuscleMotor(int16_t, int16_t);                    //done
+  MuscleMotor(/*int16_t, int16_t*/);                  
   void readSignal(int16_t);
-  //int  getAmountOfSeconds();                        //delete
   bool checkGripPosition(int16_t);
   void setMaxSignal(int16_t);
   int  rms(int);
-  void openCloseActuator(/*bool, int*/);            //placing the openCloseActuator function in the class
-  //void reset();                                   //to be added later. This should reset all data to default so that the program can start running fresh again.
+  void openCloseActuator();  
+  void setFsrReading(int16_t);
+  void indicateBatteryLevel();          
 };
+
+
+//Instantiate the class. Default threshold set to 25. 
+MuscleMotor* mm = new MuscleMotor(/*25, 0*/);
 
 /**
 * Set the fields to a default value.
 **/
-MuscleMotor::MuscleMotor(int16_t maxsignal, int16_t minsignal)
+MuscleMotor::MuscleMotor(/*int16_t maxsignal, int16_t minsignal*/)
 {
   this->openGrip = true;
   this->currentGrip = true;
-  this->maxSignal = maxsignal;
-  this->minSignal = minsignal;
+  //this->maxSignal = maxsignal;
+  //this->minSignal = minsignal;
   this->amountOfSeconds = 0;
 }
 
@@ -86,13 +112,11 @@ void MuscleMotor::setMaxSignal(int16_t maxSignal)
   this->maxSignal = maxSignal;
 }
 
-/**
-* Outputs the amount of seconds we received the signals                       //delete
-**/
-/*int MuscleMotor::getAmountOfSeconds()
-{
-  return this->amountOfSeconds;
-}*/
+void MuscleMotor::setFsrReading(int16_t fsrReading){
+  this->fsrReading = fsrReading;
+}
+
+
 
 // check to see if the grip should be open or close
 // have to make a new function that calculates 2 seconds
@@ -106,7 +130,7 @@ bool MuscleMotor::checkGripPosition(int16_t bicepValue)
   // the time press back to 0;
 
   if (amountOfSeconds >= 2000) {
-	amountOfSeconds = 0;
+  amountOfSeconds = 0;
   }
   
   //If the muscle is squeezed for 1.5 seconds, Switch the
@@ -168,10 +192,12 @@ int MuscleMotor::rms(int emgValue) {
   //Print things to the monitor. Creates the plot
   Serial.print(emgValue);
   Serial.print("\t");
- // Serial.print(threshold);
   Serial.print(this->maxSignal);
   Serial.print("\t");
+  Serial.print(this->fsrReading);
+  Serial.print("\t");
   Serial.println(rmsValue);
+  //Serial.print("\t");
   delay(25);
 
   return rmsValue;
@@ -181,7 +207,7 @@ int MuscleMotor::rms(int emgValue) {
 *  Open or close the actuator based on a boolean ___________ and a pressLength int
 **/
 
-void MuscleMotor::openCloseActuator(/*bool gripOpen, int pressLength*/) {
+void MuscleMotor::openCloseActuator() {
   // if we receive a boolean that says, open is true
   // we move the actuator so that it opens.
   // else we close it.
@@ -189,25 +215,74 @@ void MuscleMotor::openCloseActuator(/*bool gripOpen, int pressLength*/) {
   if (currentGrip) {
 
 
-    if (amountOfSeconds >= 2000) {                                                              //change these to 1900 and it might work
-      //writing onto the servo to open it (extend it)
-      for (pos = 0; pos < 180; pos = pos + 1){
+    if (amountOfSeconds >= 2000) {                                                         
+      //writing onto the servo to close it
+      digitalWrite(led, HIGH);
+      for (/*pos = 0*/; pos < 180; pos = pos + 1){
+        myservo2.write(pos);
         myservo.write(pos);
+        mm->setFsrReading(analogRead(fsr));
         delay(5);
+        
+        if(fsrReading > 600){
+          //digitalWrite(led, LOW);
+          break;
+        }
       }
-
     }
+    
   } else {
     if (amountOfSeconds >= 2000) {
-      //writing onto the servo to close it (retract it)
-      for (pos = 180; pos > 1; pos = pos - 1) {
+      //writing onto the servo to open it
+      digitalWrite(led, LOW);
+      for (/*pos = 180*/; pos > 1; pos = pos - 1) {
+        myservo2.write(pos);
         myservo.write(pos);
         delay(5);
+        
       }
     }
-
+    
   }
+
+  
 }
+/**
+*  Light RGB LED to different colors to signal the battery level.
+**/
+
+void MuscleMotor::indicateBatteryLevel() {
+  
+  int bat2Level = analogRead(BatteryLevelReadBat2);
+  int bat1Level = analogRead(BatteryLevelReadBoth);
+  int greenThreshold = 818; // 4V*1023/5V
+  int redThreshold = 655; // 3.2V*1023/5V
+  //Serial.print(bat2Level);
+  //Serial.print("\t");
+  //Serial.println(bat1Level);
+
+    digitalWrite(BatteryLevelLEDB, LOW);
+
+    if((bat2Level > greenThreshold)/* && (bat1Level > greenThreshold)*/) {
+    digitalWrite(BatteryLevelLEDR, LOW);
+    digitalWrite(BatteryLevelLEDB, LOW);
+    digitalWrite(BatteryLevelLEDG, HIGH);
+    }
+    
+    else if((bat2Level > redThreshold)/* && (bat1Level > redThreshold)*/) {
+      digitalWrite(BatteryLevelLEDR, LOW);
+      digitalWrite(BatteryLevelLEDG, LOW);
+      digitalWrite(BatteryLevelLEDB, HIGH);
+    }
+    
+    else if((bat2Level <= redThreshold)/* || (bat1Level <= redThreshold)*/){
+      digitalWrite(BatteryLevelLEDR, HIGH);
+      digitalWrite(BatteryLevelLEDG, LOW);
+      digitalWrite(BatteryLevelLEDB, LOW);
+    }
+    
+}
+
 
 int* maxElement(int * first, int * last){
   
@@ -222,89 +297,25 @@ int* maxElement(int * first, int * last){
   return maxNum;
 }
 
-/** ###HARDWARE CONTROL### **/
 
-/**
-* func() openCloseActuator
-*
-* Open or close the actuator based on a boolean
-* @parameter bool open: if gripOpen is true, open the hand
-* @parameter int pressLength: We use pressLength to measure if it
-*     has been 2 seconds. if val >= 2000, then its been 2 seconds.
-**/
-
-/* OLD openCloseActuator() function */
-/*void openCloseActuator(bool gripOpen, int pressLength) {
-  // if we receive a boolean that says, open is true
-  // we move the actuator so that it opens.
-  // else we close it.
-
-  if (gripOpen) {
-
-
-    if (pressLength >= 2000) {
-      //writing onto the servo to open it (extend it)
-      for (pos = 0; pos < 180; pos = pos + 1){
-        myservo.write(pos);
-        delay(5);
-      }
-
-    }
-  } else {
-    if (pressLength >= 2000) {
-      //writing onto the servo to close it (retract it)
-      for (pos = 180; pos > 1; pos = pos - 1) {
-        myservo.write(pos);
-        delay(5);
-      }
-    }
-
-  }
-}*/
-
-
-/* OLD RMS function
-int RMS(int emgValue) {
-  total = total - emgArray[readIndex];
-  emgArray[readIndex] = sq(emgValue);
-  total = total + emgArray[readIndex];
-  readIndex = readIndex + 1;
-  if (readIndex >= 25) {
-    readIndex = 0;
-  }
-  rmsValue = (sqrt(total/25));
-  Serial.print(emgValue);
-  Serial.print("\t");
-  Serial.print(threshold);
-  Serial.print("\t");
-  Serial.println(rmsValue);
-  delay(25);
-
-  return rmsValue;
-}
-*/
-
-//Instantiate the class.
-MuscleMotor* mm = new MuscleMotor(25, 0);
 
 void loop() {
   // put your main code here, to run repeatedly:
   // Rule of thumb for optimization:
   // The code within this box should not be more than 8 lines
 
+  mm->indicateBatteryLevel();
+
+  //set fsrReading variable
+  mm->setFsrReading(analogRead(fsr));
+
   //getRMSSignal = mm->rms(analogRead(emg) - 334);
-  getRMSSignal = mm->rms(analogRead(emg) - 575);
+  getRMSSignal = mm->rms(analogRead(emg) - 500);
 
   // Setting variable threshold
- // threshold = analogRead(thresholdPot)/10;
-  // threshold = 25;
-  // this will be used to change gripPosition
-  mm->setMaxSignal(analogRead(thresholdPot)/10);
+  mm->setMaxSignal(analogRead(thresholdPot));
+  
   gripOpen = mm->checkGripPosition(getRMSSignal);
-  //pressLength = mm->getAmountOfSeconds();                               //delete
-  mm->openCloseActuator(/*gripOpen, pressLength*/);
+  mm->openCloseActuator();
 
 }
-
-//Git Test
-//more
