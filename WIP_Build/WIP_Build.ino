@@ -234,14 +234,10 @@ int MuscleMotor::rms(int emgValue) {
   rmsValue = (sqrt(total/24));
 
   //Print things to the monitor. Creates the plot
-  Serial.print(emgValue);
-  Serial.print("\t");
-  Serial.print(this->maxSignal);
-  Serial.print("\t");
-  Serial.print(this->fsrReading);
-  Serial.print("\t");
-  Serial.println(rmsValue);
-  //Serial.print("\t");
+  Print->p(emgValue);
+  Print->p(this->maxSignal);
+  Print->p(this->fsrReading);
+  Print->pln(rmsValue);
   delay(25);
 
   return rmsValue;
@@ -266,10 +262,9 @@ void MuscleMotor::openCloseActuator() {
         myservo2.write(pos);
         myservo.write(pos);
         mm->setFsrReading(analogRead(fsr));
-        delay(5);
+        delay(50);
         
-        if(fsrReading > 600){
-          //digitalWrite(led, LOW);
+        if(fsrReading > 200){
           break;
         }
       }
@@ -301,9 +296,8 @@ void MuscleMotor::indicateBatteryLevel() {
   int bat1Level = analogRead(BatteryLevelReadBoth);
   int greenThreshold = 818; // 4V*1023/5V
   int redThreshold = 655; // 3.2V*1023/5V
-  //Serial.print(bat2Level);
-  //Serial.print("\t");
-  //Serial.println(bat1Level);
+  //Print->p(bat2Level);
+  //Print->pln(bat1Level);
 
     digitalWrite(BatteryLevelLEDB, LOW);
 
