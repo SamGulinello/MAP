@@ -4,7 +4,24 @@
 * Consists of the latest working code as of 11/15/18
 **/
 
+/*
+ * We want to add a function to center the EMG values around zero
+ * automatically, so the RMS function works as smoothly as possible
+ * 
+ * We should try to make the code as battery-efficient as possible
+ * 
+ * Consider making the RMS array length (25) smaller, so we have a 
+ * faster response time to changes in the EMG reading
+ * 
+ * Make sure FSR code is working
+ * 
+ * Test if removing the max value actually does anything useful
+ * 
+ * Change print values to a scale of 0V to 5V
+ */
+
 #include <Servo.h>
+
 Servo myservo;
 Servo myservo2;
 int emgAvg;
@@ -80,13 +97,20 @@ private:
   bool openGrip;
   bool currentGrip;
   int16_t maxSignal;
+<<<<<<< HEAD
   //int16_t minSignal;
+=======
+>>>>>>> 2c0c498158d049e5f99d16c2aa53147a198c2914
   int amountOfSeconds;
   int16_t fsrReading;
 
 
 public:
+<<<<<<< HEAD
   MuscleMotor(/*int16_t, int16_t*/);                  
+=======
+  MuscleMotor();                  
+>>>>>>> 2c0c498158d049e5f99d16c2aa53147a198c2914
   void readSignal(int16_t);
   bool checkGripPosition(int16_t);
   void setMaxSignal(int16_t);
@@ -97,19 +121,60 @@ public:
   int emgCal(int16_t);         
 };
 
+/*
+ * New class to make printing easier
+ */
+class Monitor {
+private:
+  double factor;
+  int precision;
+  
+public:
+  Monitor();
+  void p(int);
+  void pln(int);
+};
+
+Monitor* Print = new Monitor();
+
 
 //Instantiate the class. Default threshold set to 25. 
+<<<<<<< HEAD
 MuscleMotor* mm = new MuscleMotor(/*25, 0*/);
+=======
+MuscleMotor* mm = new MuscleMotor();
+
+Monitor::Monitor(){
+  this->factor = .00488759;
+  this->precision = 3;
+}
+
+void Monitor::p(int in){
+  Serial.print(in * factor, precision);
+  Serial.print("\t");
+}
+
+void Monitor::pln(int in){
+  Serial.println(in * factor, precision);
+}
+>>>>>>> 2c0c498158d049e5f99d16c2aa53147a198c2914
 
 /**
 * Set the fields to a default value.
 **/
+<<<<<<< HEAD
 MuscleMotor::MuscleMotor(/*int16_t maxsignal, int16_t minsignal*/)
 {
   this->openGrip = true;
   this->currentGrip = true;
   //this->maxSignal = maxsignal;
   //this->minSignal = minsignal;
+=======
+MuscleMotor::MuscleMotor()
+{
+  this->openGrip = true;
+  this->currentGrip = true;
+>>>>>>> 2c0c498158d049e5f99d16c2aa53147a198c2914
   this->amountOfSeconds = 0;
 }
 
@@ -196,6 +261,7 @@ int MuscleMotor::rms(int emgValue) {
   rmsValue = (sqrt(total/24));
 
   //Print things to the monitor. Creates the plot
+<<<<<<< HEAD
   Serial.print(emgValue);
   Serial.print("\t");
   Serial.print(this->maxSignal);
@@ -204,6 +270,12 @@ int MuscleMotor::rms(int emgValue) {
   Serial.print("\t");
   Serial.println(rmsValue);
   //Serial.print("\t");
+=======
+  Print->p(emgValue);
+  Print->p(this->maxSignal);
+  Print->p(this->fsrReading);
+  Print->pln(rmsValue);
+>>>>>>> 2c0c498158d049e5f99d16c2aa53147a198c2914
   delay(25);
 
   return rmsValue;
@@ -224,14 +296,20 @@ void MuscleMotor::openCloseActuator() {
     if (amountOfSeconds >= 2000) {                                                         
       //writing onto the servo to close it
       digitalWrite(led, HIGH);
-      for (/*pos = 0*/; pos < 180; pos = pos + 1){
+      for (; pos < 180; pos = pos + 1){
         myservo2.write(pos);
         myservo.write(pos);
         mm->setFsrReading(analogRead(fsr));
+<<<<<<< HEAD
         delay(5);
         
         if(fsrReading > 600){
           //digitalWrite(led, LOW);
+=======
+        delay(50);
+        
+        if(fsrReading > 200){
+>>>>>>> 2c0c498158d049e5f99d16c2aa53147a198c2914
           break;
         }
       }
@@ -241,7 +319,7 @@ void MuscleMotor::openCloseActuator() {
     if (amountOfSeconds >= 2000) {
       //writing onto the servo to open it
       digitalWrite(led, LOW);
-      for (/*pos = 180*/; pos > 1; pos = pos - 1) {
+      for (; pos > 1; pos = pos - 1) {
         myservo2.write(pos);
         myservo.write(pos);
         delay(5);
@@ -263,9 +341,14 @@ void MuscleMotor::indicateBatteryLevel() {
   int bat1Level = analogRead(BatteryLevelReadBoth);
   int greenThreshold = 818; // 4V*1023/5V
   int redThreshold = 655; // 3.2V*1023/5V
+<<<<<<< HEAD
   //Serial.print(bat2Level);
   //Serial.print("\t");
   //Serial.println(bat1Level);
+=======
+  //Print->p(bat2Level);
+  //Print->pln(bat1Level);
+>>>>>>> 2c0c498158d049e5f99d16c2aa53147a198c2914
 
     digitalWrite(BatteryLevelLEDB, LOW);
 
@@ -330,7 +413,11 @@ void loop() {
   mm->setFsrReading(analogRead(fsr));
 
   //getRMSSignal = mm->rms(analogRead(emg) - 334);
+<<<<<<< HEAD
   getRMSSignal = mm->rms(Value - emgAvg);
+=======
+  getRMSSignal = mm->rms(analogRead(emg) - 500);
+>>>>>>> 2c0c498158d049e5f99d16c2aa53147a198c2914
 
   // Setting variable threshold
   mm->setMaxSignal(analogRead(thresholdPot));
