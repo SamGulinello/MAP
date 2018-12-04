@@ -4,26 +4,31 @@
 * Consists of the latest working code as of 11/15/18
 **/
 
+
 #include <Servo.h>
 Servo myservo;
 Servo myservo2;
-int emgAvg;
-int emgFlag;
-int avgTotal;
 int pos = 0;
 int servoState = 0;
 bool gripOpen = false;
-int emgArray[25] = {0};
+const int emgArrayLength = 25;
+int32_t emgArray[emgArrayLength] = {0};
 int readIndex;
-int emgValue;
-int rmsValue;
-long total;
+int32_t emgValue;
+int32_t rmsValue;
+int32_t rmsValue2;
+int32_t total;
+int32_t total2;
 int getRMSSignal = 0;
-int *maxNum;
-int *first;
-int *last;
-int maxValue = 0;
-int Value = 0;
+int32_t *maxNum;
+int32_t *first;
+int32_t *last;
+int32_t maxValue = 0;
+int32_t emgRead = 0;
+
+// Calibration Sequence Variables
+int32_t emgAvg = 0;
+int32_t loopRuns = 0;
 
 // Analog Pins
 int fsr = A5;
@@ -40,30 +45,6 @@ int led = 7;
 int servo = 10;
 int servo2 = 11;
 
-
-
-void setup() {
-  // put your setup code here, to run once:
-  myservo.attach(servo);
-  myservo2.attach(servo2);
-  myservo.write(servoState);
-  myservo2.write(servoState);
-  pinMode(thresholdPot, INPUT);
-  pinMode(emg, INPUT);
-  pinMode(fsr, INPUT);
-  pinMode(BatteryLevelReadBoth, INPUT);
-  pinMode(BatteryLevelReadBat2, INPUT);
-  pinMode(led, OUTPUT);
-  pinMode(BatteryLevelLEDR, OUTPUT);
-  pinMode(BatteryLevelLEDG, OUTPUT);
-  pinMode(BatteryLevelLEDB, OUTPUT);
-
-  Serial.begin(9600);
-  *maxNum = 0;
-  *first = 0;
-  *last = 0;
-  emgFlag = 1;
-}
 
 /**
 * Start of Muscle Motor class.
@@ -90,21 +71,50 @@ public:
   void readSignal(int16_t);
   bool checkGripPosition(int16_t);
   void setMaxSignal(int16_t);
-  int  rms(int);
+  int32_t  rms(int32_t);
   void openCloseActuator();  
   void setFsrReading(int16_t);
   void indicateBatteryLevel();
-  int emgCal(int16_t);         
+  void emgCal();         
 };
 
+/*
+ * New class to make printing easier
+ */
+class Monitor {
+private:
+  double factor;
+  int precision;
+  
+public:
+  Monitor();
+  void p(int);
+  void pln(int);
+};
+
+Monitor::Monitor(){
+  this->factor = 4.88759;
+  this->precision = 0;
+}
+
+void Monitor::p(int in){
+  Serial.print(in * factor, precision);
+  Serial.print("\t");
+}
+
+void Monitor::pln(int in){
+  Serial.println(in * factor, precision);
+}
+
+Monitor* Print = new Monitor();
 
 //Instantiate the class. Default threshold set to 25. 
-MuscleMotor* mm = new MuscleMotor(/*25, 0*/);
+MuscleMotor* mm = new MuscleMotor();
 
 /**
 * Set the fields to a default value.
 **/
-MuscleMotor::MuscleMotor(/*int16_t maxsignal, int16_t minsignal*/)
+MuscleMotor::MuscleMotor()
 {
   this->openGrip = true;
   this->currentGrip = true;
@@ -169,22 +179,22 @@ bool MuscleMotor::checkGripPosition(int16_t bicepValue)
 * Calculates Root Mean Square (RMS) of last 25 readings when called, including the newest emgValue reading
 * Removes the maximum value, in order to guarentee a more uniform reading
 **/
-int MuscleMotor::rms(int emgValue) {
+int32_t MuscleMotor::rms(int32_t emgValue) {
   //Updates array with new value from the emg
   total = total - emgArray[readIndex];
   emgArray[readIndex] = sq(emgValue);
   total = total + emgArray[readIndex];
+  total2 = total2 + emgArray[readIndex];
   readIndex = readIndex + 1;
-  if (readIndex >= 25) {
+  if (readIndex >= emgArrayLength) {
     readIndex = 0;
   }
-
 
   //adds maximum value back in, updates it, and then removes it again
   total += maxValue;                     
 
   first = emgArray;
-  last = emgArray+24;
+  last = emgArray+emgArrayLength;
 
   maxNum = maxElement(first, last);
   maxValue = *maxNum;
@@ -193,17 +203,13 @@ int MuscleMotor::rms(int emgValue) {
 
 
   //calculates rms
-  rmsValue = (sqrt(total/24));
+  rmsValue = (sqrt(total/(emgArrayLength - 1)));
 
   //Print things to the monitor. Creates the plot
-  Serial.print(emgValue);
-  Serial.print("\t");
-  Serial.print(this->maxSignal);
-  Serial.print("\t");
-  Serial.print(this->fsrReading);
-  Serial.print("\t");
-  Serial.println(rmsValue);
-  //Serial.print("\t");
+  Print->p(emgValue);
+  //Print->p(this->maxSignal);
+  //Print->p(this->fsrReading);
+  Print->pln(rmsValue);
   delay(25);
 
   return rmsValue;
@@ -289,8 +295,19 @@ void MuscleMotor::indicateBatteryLevel() {
     
 }
 
+void MuscleMotor::emgCal(){
+  emgAvg = 0;
+  
+  for(int i = 0; i < 25; i++){
+    emgAvg += analogRead(emg);
+    delay(25);
+  }
 
-int* maxElement(int * first, int * last){
+  emgAvg = emgAvg / 25;
+}
+
+
+int32_t* maxElement(int32_t * first, int32_t * last){
   
   maxNum = first;
   
@@ -303,17 +320,28 @@ int* maxElement(int * first, int * last){
   return maxNum;
 }
 
-int MuscleMotor::emgCal(int emgValue){
-if(emgFlag = 1){
-  avgTotal = avgTotal - emgArray[readIndex];
-  emgArray[readIndex] = emgValue;
-  avgTotal = avgTotal + emgArray[readIndex];
-  readIndex = readIndex + 1;
-  if (readIndex >= 25) {
-    readIndex = 0;
-  }
-  emgAvg = (avgTotal/25);
-}
+void setup() {
+  // put your setup code here, to run once:
+  myservo.attach(servo);
+  myservo2.attach(servo2);
+  myservo.write(servoState);
+  myservo2.write(servoState);
+  pinMode(thresholdPot, INPUT);
+  pinMode(emg, INPUT);
+  pinMode(fsr, INPUT);
+  pinMode(BatteryLevelReadBoth, INPUT);
+  pinMode(BatteryLevelReadBat2, INPUT);
+  pinMode(led, OUTPUT);
+  pinMode(BatteryLevelLEDR, OUTPUT);
+  pinMode(BatteryLevelLEDG, OUTPUT);
+  pinMode(BatteryLevelLEDB, OUTPUT);
+
+  Serial.begin(9600);
+  *maxNum = 0;
+  *first = 0;
+  *last = 0;
+
+  mm->emgCal();
 }
 
 
@@ -321,8 +349,7 @@ void loop() {
   // put your main code here, to run repeatedly:
   // Rule of thumb for optimization:
   // The code within this box should not be more than 8 lines
- Value = analogRead(emg);
-  mm->emgCal(Value);
+  emgRead = analogRead(emg);
 
   mm->indicateBatteryLevel();
 
@@ -330,14 +357,13 @@ void loop() {
   mm->setFsrReading(analogRead(fsr));
 
   //getRMSSignal = mm->rms(analogRead(emg) - 334);
-  getRMSSignal = mm->rms(Value - emgAvg);
+  getRMSSignal = mm->rms(emgRead - emgAvg);
 
   // Setting variable threshold
   mm->setMaxSignal(analogRead(thresholdPot));
   
   gripOpen = mm->checkGripPosition(getRMSSignal);
   mm->openCloseActuator();
-  emgFlag = 0;
 
+  loopRuns++;
 }
-
