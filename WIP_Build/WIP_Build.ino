@@ -61,13 +61,12 @@ private:
   bool openGrip;
   bool currentGrip;
   int16_t maxSignal;
-  //int16_t minSignal;
   int amountOfSeconds;
   int16_t fsrReading;
 
 
 public:
-  MuscleMotor(/*int16_t, int16_t*/);                  
+  MuscleMotor();                  
   void readSignal(int16_t);
   bool checkGripPosition(int16_t);
   void setMaxSignal(int16_t);
@@ -184,7 +183,6 @@ int32_t MuscleMotor::rms(int32_t emgValue) {
   total = total - emgArray[readIndex];
   emgArray[readIndex] = sq(emgValue);
   total = total + emgArray[readIndex];
-  total2 = total2 + emgArray[readIndex];
   readIndex = readIndex + 1;
   if (readIndex >= emgArrayLength) {
     readIndex = 0;
