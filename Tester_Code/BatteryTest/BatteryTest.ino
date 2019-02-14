@@ -9,6 +9,7 @@ int pos = 0;
 int servoState = 0; //this means the hand starts opened
 bool handState = false; //false indicates that hand is open
 unsigned int beginTime;
+unsigned int startTime;
 
 void setup() {
   // put your setup code here, to run once:
@@ -19,6 +20,7 @@ void setup() {
   Serial.begin(9600);
 
   unsigned int beginTime = millis();
+  unsigned int startTime = millis();
 }
 
 
@@ -56,6 +58,8 @@ void loop() {
     moveMotors();
 
     beginTime = millis();
+
+    Serial.println((millis() - startTime) / 1000);
   }
 
   
