@@ -197,7 +197,7 @@ int32_t MuscleMotor::rms(int32_t emgValue) {
 
   //Print things to the monitor. Creates the plot
   Print->p(emgValue);
-  //Print->p(this->maxSignal);
+  Print->p(this->maxSignal);
   //Print->p(this->fsrReading);
   Print->pln(rmsValue);
   delay(25);
@@ -231,18 +231,20 @@ void MuscleMotor::openCloseActuator() {
           break;
         }
       }
+      digitalWrite(led, LOW);
     }
     
   } else {
     if (amountOfSeconds >= 2000) {
       //writing onto the servo to open it
-      digitalWrite(led, LOW);
+      digitalWrite(led, HIGH);
       for (/*pos = 180*/; pos > 1; pos = pos - 1) {
         myservo2.write(pos);
         myservo.write(pos);
         delay(5);
         
       }
+      digitalWrite(led, LOW);
     }
     
   }
@@ -337,7 +339,8 @@ void loop() {
   getRMSSignal = mm->rms(emgRead - emgAvg);
 
   // Setting variable threshold
-  mm->setMaxSignal(analogRead(thresholdPot));
+  //mm->setMaxSignal(analogRead(thresholdPot));
+  mm->setMaxSignal(25);
   
   gripOpen = mm->checkGripPosition(getRMSSignal);
   mm->openCloseActuator();
