@@ -4,8 +4,9 @@
 * Consists of the latest working code as of 11/15/18
 **/
 
-
 #include <Servo.h>
+#include "Print.h"
+#include "Timer.h"
 Servo myservo;
 Servo myservo2;
 int pos = 0;
@@ -28,14 +29,13 @@ int32_t emgRead = 0;
 
 // Calibration Sequence Variables
 int32_t emgAvg = 0;
-int32_t loopRuns = 0;
 
 // Analog Pins
-int fsr = A5;
+int fsr = A1;
 int BatteryLevelReadBoth = A3;
 int BatteryLevelReadBat2 = A2;
 int thresholdPot = A4;
-int emg = A1;
+int emg = A5;
 
 //Digital Pins
 int BatteryLevelLEDR = 2;
@@ -45,7 +45,22 @@ int led = 7;
 int servo = 10;
 int servo2 = 11;
 
+//--------Below Are functions not in mm class---------------//
+int32_t* maxElement(int32_t * first, int32_t * last){
+  
+  maxNum = first;
+  
+  while(++first != last){
+    if(*first > *maxNum){
+      maxNum = first;
+    }
+  }
 
+  return maxNum;
+}
+
+
+//--------Start of mm Class----------------------------------//
 /**
 * Start of Muscle Motor class.
 *
@@ -77,38 +92,14 @@ public:
   void emgCal();         
 };
 
-/*
- * New class to make printing easier
- */
-class Monitor {
-private:
-  double factor;
-  int precision;
-  
-public:
-  Monitor();
-  void p(int);
-  void pln(int);
-};
-
-Monitor::Monitor(){
-  this->factor = 4.88759;
-  this->precision = 0;
-}
-
-void Monitor::p(int in){
-  Serial.print(in * factor, precision);
-  Serial.print("\t");
-}
-
-void Monitor::pln(int in){
-  Serial.println(in * factor, precision);
-}
-
+//Instantiate printer class
 Monitor* Print = new Monitor();
 
-//Instantiate the class. Default threshold set to 25. 
+//Instantiate mm class.
 MuscleMotor* mm = new MuscleMotor();
+
+//Instantiate Battery Timer
+Timer* BatTimer = new Timer();
 
 /**
 * Set the fields to a default value.
@@ -173,6 +164,7 @@ bool MuscleMotor::checkGripPosition(int16_t bicepValue)
   }
 
 }
+
 
 /**
 * Calculates Root Mean Square (RMS) of last 25 readings when called, including the newest emgValue reading
@@ -305,19 +297,6 @@ void MuscleMotor::emgCal(){
 }
 
 
-int32_t* maxElement(int32_t * first, int32_t * last){
-  
-  maxNum = first;
-  
-  while(++first != last){
-    if(*first > *maxNum){
-      maxNum = first;
-    }
-  }
-
-  return maxNum;
-}
-
 void setup() {
   // put your setup code here, to run once:
   myservo.attach(servo);
@@ -362,6 +341,4 @@ void loop() {
   
   gripOpen = mm->checkGripPosition(getRMSSignal);
   mm->openCloseActuator();
-
-  loopRuns++;
 }
