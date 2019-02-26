@@ -11,7 +11,7 @@ class Timer {
   public:
     Timer();
     unsigned long getTotalTime();
-    void newTimer();
+    void resetTimer();
     unsigned long getTime();
 };
 
@@ -33,7 +33,7 @@ unsigned long Timer::getTime(){
   }
 }
 
-void Timer::newTimer(){
+void Timer::resetTimer(){
   prevRead = millis();
   allowGetTime = 1;
 }

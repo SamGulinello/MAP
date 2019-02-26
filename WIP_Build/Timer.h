@@ -7,6 +7,6 @@ class Timer {
   public:
     Timer();
     unsigned long getTotalTime();
-    void newTimer();
+    void resetTimer();
     unsigned long getTime();
 };

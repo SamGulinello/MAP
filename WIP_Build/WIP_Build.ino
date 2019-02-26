@@ -9,17 +9,14 @@
 #include "Timer.h"
 Servo myservo;
 Servo myservo2;
-int pos = 0;
-int servoState = 0;
-bool gripOpen = false;
-const int emgArrayLength = 25;
-int32_t emgArray[emgArrayLength] = {0};
+int initialState = 0;
+const int EMG_ARRAY_LENGTH = 25;
+int32_t emgArray[EMG_ARRAY_LENGTH] = {0};
+const int TIME_OF_FLEX = 700;
 int readIndex;
 int32_t emgValue;
 int32_t rmsValue;
-int32_t rmsValue2;
 int32_t total;
-int32_t total2;
 int getRMSSignal = 0;
 int32_t *maxNum;
 int32_t *first;
@@ -73,21 +70,22 @@ int32_t* maxElement(int32_t * first, int32_t * last){
 **/
 class MuscleMotor {
 private:
-  bool openGrip;
   bool currentGrip;
   int16_t maxSignal;
   int amountOfSeconds;
   int16_t fsrReading;
-
+  void openHand();
+  void closeHand();
+  int servoPos;
 
 public:
   MuscleMotor();                  
   void readSignal(int16_t);
-  bool checkGripPosition(int16_t);
-  void setMaxSignal(int16_t);
+  void checkGripPosition(int32_t);
+  void setMaxSignal(int32_t);
   int32_t  rms(int32_t);
   void openCloseActuator();  
-  void setFsrReading(int16_t);
+  void setFsrReading(int32_t);
   void indicateBatteryLevel();
   void emgCal();         
 };
@@ -99,70 +97,75 @@ Monitor* Print = new Monitor();
 MuscleMotor* mm = new MuscleMotor();
 
 //Instantiate Battery Timer
-Timer* BatTimer = new Timer();
+Timer* Time = new Timer();
 
 /**
 * Set the fields to a default value.
 **/
 MuscleMotor::MuscleMotor()
 {
-  this->openGrip = true;
   this->currentGrip = true;
-  //this->maxSignal = maxsignal;
-  //this->minSignal = minsignal;
-  this->amountOfSeconds = 0;
+  this->servoPos = 0;
 }
 
-void MuscleMotor::setMaxSignal(int16_t maxSignal)
+void MuscleMotor::setMaxSignal(int32_t maxSignal)
 {
   this->maxSignal = maxSignal;
 }
 
-void MuscleMotor::setFsrReading(int16_t fsrReading){
+void MuscleMotor::setFsrReading(int32_t fsrReading){
   this->fsrReading = fsrReading;
 }
 
 
+void MuscleMotor::checkGripPosition(int32_t rmsVal){
+  
+  if(!Time->getTime()){
+    Time->resetTimer();
+    
+  } else if(Time->getTime() > TIME_OF_FLEX){
+    currentGrip = !currentGrip;
 
-// check to see if the grip should be open or close
-// have to make a new function that calculates 2 seconds
-bool MuscleMotor::checkGripPosition(int16_t bicepValue)
-{
-
-  // A hack to allow the actuator to work. We've to change
-  // the amount of seconds to be more than the time for
-  // the grip to change. Once it is higher than the time
-  // for the grip to change (2000 or 2 seconds). We change
-  // the time press back to 0;
-
-  if (amountOfSeconds >= 2000) {
-  amountOfSeconds = 0;
+    if(currentGrip){
+      closeHand();
+    } else{
+      openHand();
+    }
+    
+    Time->resetTimer();
+    
+  } else if(rmsVal < maxSignal){
+    Time->resetTimer();
   }
   
-  //If the muscle is squeezed for 1.5 seconds, Switch the
-  //grip, save the grip to the currentGrip and then
-  // return the openGrip.
-  if (amountOfSeconds >= 1900) {
+}
 
-    openGrip = !openGrip;
-    currentGrip = openGrip;
-    amountOfSeconds+=100;
-    return openGrip;
+void MuscleMotor::openHand(){
 
-    //if the value of Bicep and tripcep is not high (not squeezed)
-    // return the currentGrip Position.
-  } else if (bicepValue < maxSignal) {
-    amountOfSeconds = 0;
-    return currentGrip;
-
-    //if the muscles is squeezed for less than 2 seconds,
-    //delay the system for 1 millisecond, then add 1 millisecond
-    // to the total amount of seconds.
-  } else {
-    delay(100);
-    amountOfSeconds += 100;
+  digitalWrite(led, HIGH);
+  for (; mm->servoPos > 1; mm->servoPos--) {
+    myservo2.write(mm->servoPos);
+    myservo.write(mm->servoPos);
+    delay(5);
+    
   }
+  
+}
 
+void MuscleMotor::closeHand(){
+  
+  digitalWrite(led, LOW);
+  for (; mm->servoPos < 180; mm->servoPos++){
+    myservo2.write(mm->servoPos);
+    myservo.write(mm->servoPos);
+    mm->setFsrReading(analogRead(fsr));
+    delay(5);
+    
+    if(fsrReading > 600){
+      break;
+    }
+  }
+  
 }
 
 
@@ -176,7 +179,7 @@ int32_t MuscleMotor::rms(int32_t emgValue) {
   emgArray[readIndex] = sq(emgValue);
   total = total + emgArray[readIndex];
   readIndex = readIndex + 1;
-  if (readIndex >= emgArrayLength) {
+  if (readIndex >= EMG_ARRAY_LENGTH) {
     readIndex = 0;
   }
 
@@ -184,7 +187,7 @@ int32_t MuscleMotor::rms(int32_t emgValue) {
   total += maxValue;                     
 
   first = emgArray;
-  last = emgArray+emgArrayLength;
+  last = emgArray+EMG_ARRAY_LENGTH;
 
   maxNum = maxElement(first, last);
   maxValue = *maxNum;
@@ -193,7 +196,7 @@ int32_t MuscleMotor::rms(int32_t emgValue) {
 
 
   //calculates rms
-  rmsValue = (sqrt(total/(emgArrayLength - 1)));
+  rmsValue = (sqrt(total/(EMG_ARRAY_LENGTH - 1)));
 
   //Print things to the monitor. Creates the plot
   Print->p(emgValue);
@@ -205,52 +208,7 @@ int32_t MuscleMotor::rms(int32_t emgValue) {
   return rmsValue;
 }
 
-/**
-*  Open or close the actuator based on a boolean ___________ and a pressLength int
-**/
 
-void MuscleMotor::openCloseActuator() {
-  // if we receive a boolean that says, open is true
-  // we move the actuator so that it opens.
-  // else we close it.
-
-  if (currentGrip) {
-
-
-    if (amountOfSeconds >= 2000) {                                                         
-      //writing onto the servo to close it
-      digitalWrite(led, HIGH);
-      for (/*pos = 0*/; pos < 180; pos = pos + 1){
-        myservo2.write(pos);
-        myservo.write(pos);
-        mm->setFsrReading(analogRead(fsr));
-        delay(5);
-        
-        if(fsrReading > 600){
-          //digitalWrite(led, LOW);
-          break;
-        }
-      }
-      digitalWrite(led, LOW);
-    }
-    
-  } else {
-    if (amountOfSeconds >= 2000) {
-      //writing onto the servo to open it
-      digitalWrite(led, HIGH);
-      for (/*pos = 180*/; pos > 1; pos = pos - 1) {
-        myservo2.write(pos);
-        myservo.write(pos);
-        delay(5);
-        
-      }
-      digitalWrite(led, LOW);
-    }
-    
-  }
-
-  
-}
 /**
 *  Light RGB LED to different colors to signal the battery level.
 **/
@@ -303,8 +261,8 @@ void setup() {
   // put your setup code here, to run once:
   myservo.attach(servo);
   myservo2.attach(servo2);
-  myservo.write(servoState);
-  myservo2.write(servoState);
+  myservo.write(initialState);
+  myservo2.write(initialState);
   pinMode(thresholdPot, INPUT);
   pinMode(emg, INPUT);
   pinMode(fsr, INPUT);
@@ -342,6 +300,5 @@ void loop() {
   //mm->setMaxSignal(analogRead(thresholdPot));
   mm->setMaxSignal(25);
   
-  gripOpen = mm->checkGripPosition(getRMSSignal);
-  mm->openCloseActuator();
+  mm->checkGripPosition(getRMSSignal);
 }
