@@ -11,7 +11,7 @@ int32_t *maxNum;
 int32_t total;
 const int EMG_ARRAY_LENGTH = 25;
 int32_t emgArray[EMG_ARRAY_LENGTH] = {0};
-const int TIME_OF_FLEX = 1000;
+const int TIME_OF_FLEX = 850;
 int readIndex;
 int32_t maxValue;
 int32_t rmsValue;
@@ -66,7 +66,7 @@ int32_t rms(int32_t emgValue) {
   emgArray[readIndex] = sq(emgValue);
   total = total + emgArray[readIndex];
   readIndex = readIndex + 1;
-  if (readIndex >= emgArrayLength) {
+  if (readIndex >= EMG_ARRAY_LENGTH) {
     readIndex = 0;
   }
 
@@ -74,7 +74,7 @@ int32_t rms(int32_t emgValue) {
   total += maxValue;                     
 
   first = emgArray;
-  last = emgArray+emgArrayLength;
+  last = emgArray+EMG_ARRAY_LENGTH;
 
   maxNum = maxElement(first, last);
   maxValue = *maxNum;
@@ -83,7 +83,7 @@ int32_t rms(int32_t emgValue) {
 
 
   //calculates rms
-  rmsValue = (sqrt(total/(emgArrayLength - 1)));
+  rmsValue = (sqrt(total/(EMG_ARRAY_LENGTH - 1)));
 
   //Print things to the monitor. Creates the plot
   Print->p(emgValue);
