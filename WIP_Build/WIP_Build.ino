@@ -10,7 +10,7 @@
 Servo myservo;
 Servo myservo2;
 int initialState = 0;
-const int EMG_ARRAY_LENGTH = 25;
+extern const int EMG_ARRAY_LENGTH = 25;
 int32_t emgArray[EMG_ARRAY_LENGTH] = {0};
 const int TIME_OF_FLEX = 700;
 int readIndex;
@@ -278,7 +278,8 @@ void setup() {
   *first = 0;
   *last = 0;
 
-  mm->emgCal();
+  mm->emgCal()
+  ;
 }
 
 
