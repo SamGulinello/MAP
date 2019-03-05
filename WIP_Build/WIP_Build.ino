@@ -101,7 +101,7 @@ class MuscleMotor {
     int16_t maxSignal;
     int16_t fsrReading;
     int servoPos;
-  
+
     // Functions concerning state of motors/apparatus
     void openHand();
     void closeHand();
@@ -128,6 +128,7 @@ MuscleMotor* mm = new MuscleMotor();
 Monitor* Print = new Monitor();
 Timer* Time = new Timer();
 
+//---------------------MuscleMotor class definitions---------------------//
 /**
  * MuscleMotor class constructor
  * 
@@ -211,9 +212,9 @@ void MuscleMotor::checkGripPosition(int32_t rmsVal){
 void MuscleMotor::openHand(){
 
   digitalWrite(led, HIGH);
-  for (; mm->servoPos > 1; mm->servoPos--) {
-    myservo2.write(mm->servoPos);
-    myservo.write(mm->servoPos);
+  for (; servoPos > 1; servoPos--) {
+    myservo2.write(servoPos);
+    myservo.write(servoPos);
     delay(5);
     
   }
@@ -235,11 +236,11 @@ void MuscleMotor::openHand(){
 void MuscleMotor::closeHand(){
   
   digitalWrite(led, LOW);
-  for (; mm->servoPos < 180; mm->servoPos++){
-    myservo2.write(mm->servoPos);
-    myservo.write(mm->servoPos);
+  for (; servoPos < 180; servoPos++){
+    myservo2.write(servoPos);
+    myservo.write(servoPos);
     
-    mm->setFsrReading(analogRead(fsr));
+    setFsrReading(analogRead(fsr));
     delay(5);
     
     if(fsrReading > FSR_THRESHOLD){
@@ -288,8 +289,7 @@ int32_t MuscleMotor::rms(int32_t emgValue) {
 
   // Print things to the monitor. Creates the plot
   Print->p(emgValue);
-  Print->p(this->maxSignal);
-  //Print->p(this->fsrReading);
+  Print->p(maxSignal);
   Print->pln(rmsValue);
 
   return rmsValue;

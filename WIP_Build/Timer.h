@@ -1,3 +1,8 @@
+/**
+ * Timer header file
+ * Contains class definition for Timer
+ */
+
 class Timer {
   private:
     unsigned long beginTime;

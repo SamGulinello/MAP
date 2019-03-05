@@ -1,3 +1,8 @@
+/**
+ * Print header file
+ * Contains class definition for Monitor
+ */
+
 class Monitor {
   private:
     double factor;
