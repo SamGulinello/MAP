@@ -13,70 +13,14 @@
  */
 
 #include <Servo.h>
+#include "Properties.h"
 #include "Print.h"
 #include "Timer.h"
-
-Servo myservo;
-Servo myservo2;
-
-// Constants
-const int INITIAL_STATE = 0;
-extern const int EMG_ARRAY_LENGTH = 25;
-const int TIME_OF_FLEX = 700;
-const int FSR_THRESHOLD = 600;
-
-// Variables for rms
-int32_t emgArray[EMG_ARRAY_LENGTH] = {0};
-int readIndex;
-int32_t rmsValue;
-int32_t total;
-int32_t *maxNum;
-int32_t *first;
-int32_t *last;
-int32_t maxValue = 0;
-
-// Variables for Loop
-int32_t getRMSSignal = 0;
-int32_t emgRead = 0;
-
-// Calibration Sequence Variables
-int32_t emgAvg = 0;
-
-// Analog Pins
-int fsr = A1;
-int BatteryLevelReadBoth = A3;
-int BatteryLevelReadBat2 = A2;
-int thresholdPot = A4;
-int emg = A5;
-
-//Digital Pins
-int BatteryLevelLEDR = 2;
-int BatteryLevelLEDG = 4;
-int BatteryLevelLEDB = 3;
-int led = 7;  //---------------------> Testing LED
-int servo = 10;
-int servo2 = 11;
+#include "Emg.h"
 
 //-------------------Below Are functions not in mm class-----------------------//
 
-/**
- * This calculates the max element in an array, given a pointer to the start 
- * of the array and a pointer to the end of the same array. This is just a 
- * simple max finder function.
- */
-int32_t* maxElement(int32_t * first, int32_t * last){
-  
-  maxNum = first;
-  
-  while(++first != last){
-    if(*first > *maxNum){
-      maxNum = first;
-    }
-  }
-
-  return maxNum;
-}
-
+/** ----- NONE ----- */
 
 //--------------------------Start of mm Class----------------------------------//
 /**
@@ -98,9 +42,12 @@ class MuscleMotor {
   private:
     // Variables concerning state of motors/apparatus
     bool currentGrip;
-    int16_t maxSignal;
-    int16_t fsrReading;
+    int32_t threshold;
     int servoPos;
+
+    //Motors
+    Servo myservo;
+    Servo myservo2;
 
     // Functions concerning state of motors/apparatus
     void openHand();
@@ -112,14 +59,13 @@ class MuscleMotor {
     MuscleMotor();   
 
     // Functions which make decisions or control states
-    void checkGripPosition(int32_t);
-    int32_t  rms(int32_t);
+    void updateGripPosition(int32_t);
     void indicateBatteryLevel();
-    void emgCal(); 
 
     // Getters and Setters
-    void setMaxSignal(int32_t);
-    void setFsrReading(int32_t);    
+    void setThreshold(int32_t); 
+    Servo getLeftMotor();
+    Servo getRightMotor();  
 };
 
 //---------------------Instantiate necessary classes---------------------//
@@ -127,6 +73,7 @@ class MuscleMotor {
 MuscleMotor* mm = new MuscleMotor();
 Monitor* Print = new Monitor();
 Timer* Time = new Timer();
+Emg* HandEmg = new Emg();
 
 //---------------------MuscleMotor class definitions---------------------//
 /**
@@ -140,19 +87,17 @@ MuscleMotor::MuscleMotor()
   this->servoPos = 0;
 }
 
-/**
- * Sets hand-trigger theshold level
- */
-void MuscleMotor::setMaxSignal(int32_t maxSignal)
+void MuscleMotor::setThreshold(int32_t threshold)
 {
-  this->maxSignal = maxSignal;
+  this->threshold = threshold;
 }
 
-/**
- * Sets fsr level
- */
-void MuscleMotor::setFsrReading(int32_t fsrReading){
-  this->fsrReading = fsrReading;
+Servo MuscleMotor::getLeftMotor(){
+  return this->myservo;
+}
+
+Servo MuscleMotor::getRightMotor(){
+  return this->myservo2;
 }
 
 /**
@@ -160,8 +105,7 @@ void MuscleMotor::setFsrReading(int32_t fsrReading){
  * the muscles are being flexed for, and changes the state of
  * the motors if necessary.
  */
-void MuscleMotor::checkGripPosition(int32_t rmsVal){
-
+void MuscleMotor::updateGripPosition(int32_t emgVal){
   // If Timer hasn't been initialized yet, getTime() returns 0
   // This if statement only executes once and never again
   if(!Time->getTime()){
@@ -188,7 +132,7 @@ void MuscleMotor::checkGripPosition(int32_t rmsVal){
 
   // Check to see if muscle has been relaxed below threshold
   // If so, reset Timer to 0
-  } else if(rmsVal < maxSignal){
+  } else if(emgVal < threshold){
 
     Time->resetTimer();
   }
@@ -199,15 +143,12 @@ void MuscleMotor::checkGripPosition(int32_t rmsVal){
    * perform an action. If the function does nothing, the Timer continues
    * counting.
    */
-  
 }
+
 
 /**
  * This opens the hand when called.
  * It also turns on an LED for testing purposes
- * 
- * -------------------Future Changes-------------------
- * Remove testing LED
  */
 void MuscleMotor::openHand(){
 
@@ -215,10 +156,11 @@ void MuscleMotor::openHand(){
   for (; servoPos > 1; servoPos--) {
     myservo2.write(servoPos);
     myservo.write(servoPos);
-    delay(5);
     
+    delay(5); 
   }
 }
+
 
 /**
  * This closes the hand when called
@@ -226,12 +168,6 @@ void MuscleMotor::openHand(){
  * 
  * If the value of the fsr is larger than a set threshold
  * immediately stop closing the hand. 
- * 
- * -------------------Future Changes-------------------
- * This is part of the MuscleMotor class "mm->" notation
- * is redundant. Remove it
- * 
- * Remove testing LED
  */
 void MuscleMotor::closeHand(){
   
@@ -239,60 +175,9 @@ void MuscleMotor::closeHand(){
   for (; servoPos < 180; servoPos++){
     myservo2.write(servoPos);
     myservo.write(servoPos);
-    
-    setFsrReading(analogRead(fsr));
+   
     delay(5);
-    
-    if(fsrReading > FSR_THRESHOLD){
-      break;
-    }
-  } 
-}
-
-
-/**
-* Calculates Root Mean Square (RMS) of "n" most recent readings (number specified in EMG_ARRAY_LENGTH) 
-* when called, including the newest emgValue reading. 
-* 
-* Removes the maximum value before calculation. This is to reduce the effect of noise.
-**/
-int32_t MuscleMotor::rms(int32_t emgValue) {
-  
-  // Updates array with square of new value from the emg
-  // Updates total to include this new value
-  total = total - emgArray[readIndex];
-  emgArray[readIndex] = sq(emgValue);
-  total = total + emgArray[readIndex];
-
-  // Increments readIndex. Sets to 0 if end of emgArray is reached
-  readIndex = readIndex + 1;
-  if (readIndex >= EMG_ARRAY_LENGTH) {
-    readIndex = 0;
   }
-
-  // Adds maximum value back in to total
-  total += maxValue;                     
-
-  // Updates maximum value based on new emgArray value
-  first = emgArray;
-  last = emgArray + EMG_ARRAY_LENGTH;
-
-  maxNum = maxElement(first, last);
-  maxValue = *maxNum;
-
-  // Removees maximum value from total
-  total -= *maxNum;                       
-
-
-  // Calculates rms
-  rmsValue = (sqrt(total/(EMG_ARRAY_LENGTH - 1)));
-
-  // Print things to the monitor. Creates the plot
-  Print->p(emgValue);
-  Print->p(maxSignal);
-  Print->pln(rmsValue);
-
-  return rmsValue;
 }
 
 
@@ -302,59 +187,33 @@ int32_t MuscleMotor::rms(int32_t emgValue) {
 *  -------------------Future Changes-------------------
 *  This needs updating to prevent possible flickering
 **/
-
 void MuscleMotor::indicateBatteryLevel() {
 
   // Read battery levels
-  int bat2Level = analogRead(BatteryLevelReadBat2);
-  int bat1Level = analogRead(BatteryLevelReadBoth);
-
-  /**-------------------Future Changes-------------------
-   * Make thresholds constants
-   */
-  int greenThreshold = 818; // 4V*1023/5V
-  int redThreshold = 655; // 3.2V*1023/5V
-
-  // What does this do?
-  digitalWrite(BatteryLevelLEDB, LOW);
+  int batLevel = analogRead(BatteryLevelRead);
 
   // This is be true if Battery is charged within working capacity
-  if((bat2Level > greenThreshold)/* && (bat1Level > greenThreshold)*/) {
+  if((batLevel > LED_GREEN_THRESHOLD)/* && (bat1Level > greenThreshold)*/) {
     digitalWrite(BatteryLevelLEDR, LOW);
     digitalWrite(BatteryLevelLEDB, LOW);
     digitalWrite(BatteryLevelLEDG, HIGH);
   }
 
   // This is true if battery is beginning to run low
-  else if((bat2Level > redThreshold)/* && (bat1Level > redThreshold)*/) {
+  else if((batLevel > LED_RED_THRESHOLD)/* && (bat1Level > redThreshold)*/) {
     digitalWrite(BatteryLevelLEDR, LOW);
     digitalWrite(BatteryLevelLEDG, LOW);
     digitalWrite(BatteryLevelLEDB, HIGH);
   }
 
   // This is true if battery is too low to run the hand
-  else if((bat2Level <= redThreshold)/* || (bat1Level <= redThreshold)*/){
+  else if((batLevel <= LED_RED_THRESHOLD)/* || (bat1Level <= redThreshold)*/){
     digitalWrite(BatteryLevelLEDR, HIGH);
     digitalWrite(BatteryLevelLEDG, LOW);
     digitalWrite(BatteryLevelLEDB, LOW);
   }
 }
 
-/**
- * Calibrates emgs so that the average emg reading may be set to 0
- * This improves accuracy of the rms function
- */
-void MuscleMotor::emgCal(){
-  emgAvg = 0;
-  
-  for(int i = 0; i < 25; i++){
-    emgAvg += analogRead(emg);
-    delay(25);
-  }
-
-  // Finds average of 25 initial readings to calibrate
-  emgAvg = emgAvg / 25;
-}
 
 /**
  * This runs once upon startup
@@ -362,17 +221,18 @@ void MuscleMotor::emgCal(){
 void setup() {
 
   // Initialize servos
-  myservo.attach(servo);
-  myservo2.attach(servo2);
-  myservo.write(INITIAL_STATE);
-  myservo2.write(INITIAL_STATE);
+  Servo leftMotor = mm->getLeftMotor();
+  Servo rightMotor = mm->getRightMotor();
+  leftMotor.attach(servoLeft);
+  leftMotor.write(INITIAL_STATE);
+  rightMotor.attach(servoRight);
+  rightMotor.write(INITIAL_STATE);
 
   // Initialize pins
   pinMode(thresholdPot, INPUT);
   pinMode(emg, INPUT);
   pinMode(fsr, INPUT);
-  pinMode(BatteryLevelReadBoth, INPUT);
-  pinMode(BatteryLevelReadBat2, INPUT);
+  pinMode(BatteryLevelRead, INPUT);
   pinMode(led, OUTPUT);
   pinMode(BatteryLevelLEDR, OUTPUT);
   pinMode(BatteryLevelLEDG, OUTPUT);
@@ -380,16 +240,6 @@ void setup() {
 
   // Initialize Serial monitor/plotter
   Serial.begin(9600);
-
-  /**-------------------Future Changes-------------------
-   * Are these variables necessary to be set here?
-   */
-  *maxNum = 0;
-  *first = 0;
-  *last = 0;
-
-  // Calibrate emgs upon startup
-  mm->emgCal();
 }
 
 /**
@@ -399,30 +249,18 @@ void setup() {
 void loop() {
 
   // Find emg value
-  emgRead = analogRead(emg);
+  HandEmg->emgRead();
 
   // Update Battery indicators
   mm->indicateBatteryLevel();
 
-  /**-------------------Future Changes-------------------
-   * This fsr update may not be necessary. It is also updated
-   * inside of the closeHand() function.
-   */
-  // Set fsrReading variable
-  mm->setFsrReading(analogRead(fsr));
-
-  // Calculate rms value
-  //getRMSSignal = mm->rms(analogRead(emg) - 334);
-  getRMSSignal = mm->rms(emgRead - emgAvg);
-
   // Setting variable threshold
-  //mm->setMaxSignal(analogRead(thresholdPot));
-  mm->setMaxSignal(25);
+  mm->setThreshold(analogRead(thresholdPot));
 
   // Decide if grip state should change and if so, change it
-  mm->checkGripPosition(getRMSSignal);
+  mm->updateGripPosition(HandEmg->getEmgValue());
 
   // This delay is important to keep the amount of loop executions smaller
   // This is important to save battery. 
-  delay(25);
+  delay(LOOP_DELAY);
 }

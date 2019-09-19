@@ -1,25 +1,33 @@
 #include <stdint.h>
+#include "Emg.h"
+#include "Arduino.h"
+#include "Properties.h"
 
-extern const int EMG_ARRAY_lENGTH;
+Emg::Emg(){
+  this->emgValue = 0;
+  this->emgAvg = 0;
+}
 
-class Emg {
-  private:
-    int32_t emgValue;
-    int32_t emgArray;
-    int32_t total;
-    int32_t readIndex;
+int32_t Emg::emgRead(){
+  int32_t emgValue = analogRead(emg);
 
-    //stuff for getMaxElement
+  this->emgValue = emgValue;
+  return this->emgValue;
+}
 
-    int32_t maxValue;
-    int32_t* first;
-    int32_t* last;
-    int32_t* maxNum;
-    
+void Emg::emgCal(){
+  int32_t emgAvg = 0;
+  
+  for(int i = 0; i < 25; i++){
+    emgAvg += emgRead();
+    delay(25);
+  }
 
-  public:
-    int32_t emgRead(int);
-    void emgCal();
-    int32_t rms(int32_t);
-    int32_t* getMaxElement(int32_t*, int32_t*);
-};
+  // Finds average of 25 initial readings to calibrate
+  this->emgAvg = emgAvg / 25;
+  return this->emgAvg;
+}
+
+int32_t Emg::getEmgValue(){
+  return (this->emgValue - this->emgAvg);
+}
