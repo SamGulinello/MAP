@@ -15,8 +15,8 @@ const int LED_RED_THRESHOLD = 655; // 3.2V*1023/5V
 /* --------- PINS ---------- */
 // Analog Pins
 const int fsr = A2;
-const int BatteryLevelRead = A3;
-const int thresholdPot = A1;
+const int BatteryLevelRead = A1;
+const int thresholdPot = A4;
 const int emg = A0;
 
 //Digital Pins

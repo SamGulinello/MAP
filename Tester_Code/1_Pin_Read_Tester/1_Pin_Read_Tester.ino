@@ -1,6 +1,6 @@
 /* All purpose tester for quick analog or digital read and plotter */
 
-int pin = A1;
+int pin = A0;
 int value;
 
 void setup() {
@@ -10,7 +10,7 @@ void setup() {
 }
 
 void loop() {
-  emgValue = analogRead(pin);
+  value = analogRead(pin);
   Serial.println(value);
   delay(25);
 

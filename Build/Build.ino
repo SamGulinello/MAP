@@ -64,6 +64,7 @@ class MuscleMotor {
 
     // Getters and Setters
     void setThreshold(int32_t); 
+    int32_t getThreshold();
     Servo getLeftMotor();
     Servo getRightMotor();  
 };
@@ -90,6 +91,10 @@ MuscleMotor::MuscleMotor()
 void MuscleMotor::setThreshold(int32_t threshold)
 {
   this->threshold = threshold;
+}
+
+int32_t MuscleMotor::getThreshold(){
+  return this->threshold;
 }
 
 Servo MuscleMotor::getLeftMotor(){
@@ -188,7 +193,6 @@ void MuscleMotor::closeHand(){
 *  This needs updating to prevent possible flickering
 **/
 void MuscleMotor::indicateBatteryLevel() {
-
   // Read battery levels
   int batLevel = analogRead(BatteryLevelRead);
 
@@ -219,7 +223,6 @@ void MuscleMotor::indicateBatteryLevel() {
  * This runs once upon startup
  */
 void setup() {
-
   // Initialize servos
   Servo leftMotor = mm->getLeftMotor();
   Servo rightMotor = mm->getRightMotor();
@@ -238,6 +241,8 @@ void setup() {
   pinMode(BatteryLevelLEDG, OUTPUT);
   pinMode(BatteryLevelLEDB, OUTPUT);
 
+  HandEmg->emgCal();
+
   // Initialize Serial monitor/plotter
   Serial.begin(9600);
 }
@@ -247,7 +252,6 @@ void setup() {
  * Try to minimize amount of operations performed in the loop
  */
 void loop() {
-
   // Find emg value
   HandEmg->emgRead();
 
@@ -263,4 +267,7 @@ void loop() {
   // This delay is important to keep the amount of loop executions smaller
   // This is important to save battery. 
   delay(LOOP_DELAY);
+
+  Print->p(HandEmg->getEmgValue());
+  Print->pln(mm->getThreshold());
 }

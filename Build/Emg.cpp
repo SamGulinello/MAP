@@ -25,7 +25,6 @@ void Emg::emgCal(){
 
   // Finds average of 25 initial readings to calibrate
   this->emgAvg = emgAvg / 25;
-  return this->emgAvg;
 }
 
 int32_t Emg::getEmgValue(){
