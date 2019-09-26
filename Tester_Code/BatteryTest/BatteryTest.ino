@@ -8,8 +8,6 @@ Servo myservo2;
 int pos = 0;
 int servoState = 0; //this means the hand starts opened
 bool handState = false; //false indicates that hand is open
-unsigned int beginTime;
-unsigned int startTime;
 
 void setup() {
   // put your setup code here, to run once:
@@ -18,9 +16,6 @@ void setup() {
   myservo.write(servoState);
   myservo2.write(servoState);
   Serial.begin(9600);
-
-  unsigned int beginTime = millis();
-  unsigned int startTime = millis();
 }
 
 
@@ -32,7 +27,6 @@ void moveMotors(){
         myservo2.write(pos);
         myservo.write(pos);
         delay(5); 
-
     }  
 
     handState = !handState;
@@ -43,7 +37,6 @@ void moveMotors(){
         myservo2.write(pos);
         myservo.write(pos);
         delay(5);
-
     }
 
     handState = !handState;
@@ -54,13 +47,7 @@ void moveMotors(){
 void loop() {
   // put your main code here, to run repeatedly:
 
-  if(millis() >= beginTime + 2000){
-    moveMotors();
+  moveMotors();
+  delay(2000);
 
-    beginTime = millis();
-
-    Serial.println((millis() - startTime) / 1000);
-  }
-
-  
 }
